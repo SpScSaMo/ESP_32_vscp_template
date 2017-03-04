@@ -36,6 +36,35 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
+/* init_millisecond_clock
+ * # The firmware code rely on a millisecond clock.
+ * # First add this to your code and make sure that it works.
+ *
+ * #vscp_timer and vscp_configtimer is the important things here. 
+ * #They are both defined by the firmware code and should be increased 
+ * #by on every millisecond, so that is what we do in our code.
+ *
+ *
+ * http://www.vscp.org/docs/vscpfirmware/doku.php?id=a_millisecond_clock
+ */
+init_millisecond_clock(void) {
+    
+    /*
+    // Clock
+    if ( INTCONbits.TMR0IF ) { // If a Timer0 Interrupt, Then...
+        // Reload value for 1 ms reolution
+        WriteTimer0(TIMER0_RELOAD_VALUE);
+        vscp_timer++;
+        vscp_configtimer++;
+        measurement_clock++;
+        timeout_clock++;
+        ...
+    */
+    
+    
+}
+
+
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     return ESP_OK;
