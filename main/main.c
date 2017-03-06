@@ -22,6 +22,41 @@
 #include "esp_event_loop.h"
 #include "nvs_flash.h"
 #include "driver/gpio.h"
+
+#include "esp_types.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "soc/timer_group_struct.h"
+#include "driver/periph_ctrl.h"
+#include "driver/timer.h"
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//******************************************************************
+// SPECIAL INCLUDES - ESP32 - THING
+//******************************************************************
+
+#include "esp_err.h"            //for error handling
+#include "esp_intr_alloc.h"     //is used for interrupts
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+//******************************************************************
+// DEFINES - ESP32 - THING
+//******************************************************************
+
+
+//Everything for Timer Implementation
+#define TIMER_INTR_SEL TIMER_INTR_LEVEL  /*!< Timer level interrupt */
+#define TIMER_GROUP    TIMER_GROUP_0     /*!< Test on timer group 0 */
+#define TIMER_DIVIDER   16               /*!< Hardware timer clock divider */
+#define TIMER_SCALE    (TIMER_BASE_CLK / TIMER_DIVIDER)  /*!< used to calculate counter value */
+#define TIMER_FINE_ADJ   (1.4*(TIMER_BASE_CLK / TIMER_DIVIDER)/1000000) /*!< used to compensate alarm value */
+#define TIMER_INTERVAL0_SEC   (3.4179)   /*!< test interval for timer 0 */
+#define TIMER_INTERVAL1_SEC   (5.78)   /*!< test interval for timer 1 */
+#define TEST_WITHOUT_RELOAD   0   /*!< example of auto-reload mode */
+#define TEST_WITH_RELOAD   1      /*!< example without auto-reload mode */
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -47,7 +82,7 @@
  *
  * http://www.vscp.org/docs/vscpfirmware/doku.php?id=a_millisecond_clock
  */
-init_millisecond_clock(void) {
+void init_millisecond_clock(void) {
     
     /*
     // Clock
