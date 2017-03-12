@@ -86,21 +86,62 @@ void IRAM_ATTR lb_isr_handler(void* arg)
 void ligthbarrier_task(void* arg)
 {
     uint32_t io_num;
+	static uint32_t personen=0;
+    uint32_t firstLB, lastLB, firstLev, lastLev;
 
 	// START the following code is for test purposes
     uint32_t sec, us;
-	uint64_t ts;
+	uint64_t lgts, actts;
 	// END the following code is for test purposes
-
+	(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY));
     for(;;) {
-        if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-            printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+    	printf("Anfang: GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+
+        firstLB=io_num;
+            firstLev=gpio_get_level(io_num);
+            if ((firstLB==GPIO_INPUT_IO_0)&&(firstLev==0)){
+            	lgts=0;
+            	while(1){
+            		(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY));
+                	printf("in While: GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+
+            		gettimeofday(&tv, NULL);
+            		(sec) = tv.tv_sec;
+            		(us) = tv.tv_usec;
+		       		(actts) = (uint64_t)(sec*1000000+us);
+				    if ((lgts!=0)&&((actts-lgts)>500000)) break;
+			        (lgts) = (uint64_t)(sec*1000000+us);
+		            lastLB=io_num;
+		            lastLev=gpio_get_level(io_num);
+		    	}
+            	if ((lastLB==GPIO_INPUT_IO_1)&&(lastLev==1)) printf("Personen: %d\n", ++personen);
+
+            }
+            if ((firstLB==GPIO_INPUT_IO_1)&&(firstLev==0)){
+            	lgts=0;
+            	while(1){
+            		(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY));
+                	printf("in While: GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
+
+            		gettimeofday(&tv, NULL);
+		            (sec) = tv.tv_sec;
+				    (us) = tv.tv_usec;
+		       		(actts) = (uint64_t)(sec*1000000+us);
+				    if ((lgts!=0)&&((actts-lgts)>500000)) break;
+			        (lgts) = (uint64_t)(sec*1000000+us);
+		            lastLB=io_num;
+		            lastLev=gpio_get_level(io_num);
+            	}
+            	if ((lastLB==GPIO_INPUT_IO_0)&&(lastLev==1)) printf("Personen: %d\n", --personen);
+
+
+  //      	printf("GPIO[%d] intr, val: %d\n", io_num, gpio_get_level(io_num));
     		// START the following code is for test purposes
-            gettimeofday(&tv, NULL);
-    		(sec) = tv.tv_sec;
-    		(us) = tv.tv_usec;
-    		(ts) = (uint64_t)(sec*1000000+us);
-            printf("Timestamp: %" PRIu64 "\n", ts);
+//            gettimeofday(&tv, NULL);
+//    		(sec) = tv.tv_sec;
+//    		(us) = tv.tv_usec;
+//    		(ts) = (uint64_t)(sec*1000000+us);
+//            printf("Timestamp: %" PRIu64 "\n", ts);
     		// END the following code is for test purposes
 
         }
