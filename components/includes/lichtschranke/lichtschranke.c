@@ -26,6 +26,7 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "lichtschranke.h"
+#include "lichtrelay.h"
 #include "time.h"
 #include <sys/time.h>
 #include <inttypes.h>
@@ -33,8 +34,8 @@
 
 /* +++++++++++++++++++++++++++ defines +++++++++++++++++++++++++++++ */
 #define __STDC_FORMAT_MACROS  // define for use of uint64_t in printf
-#define GPIO_INPUT_IO_0     4
-#define GPIO_INPUT_IO_1     2
+#define GPIO_INPUT_IO_0     25
+#define GPIO_INPUT_IO_1     26
 #define GPIO_INPUT_PIN_SEL  ((1<<GPIO_INPUT_IO_0) | (1<<GPIO_INPUT_IO_1))
 #define ESP_INTR_FLAG_DEFAULT 0
 
@@ -51,7 +52,7 @@ struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is he
  *
  */
 
-void IRAM_ATTR gpio_isr_handler(void* arg)
+void IRAM_ATTR lb_isr_handler(void* arg)
 {
 	uint32_t gpio_num = (uint32_t) arg;
 	uint32_t sec, us;
@@ -101,6 +102,7 @@ void ligthbarrier_task(void* arg)
     		(ts) = (uint64_t)(sec*1000000+us);
             printf("Timestamp: %" PRIu64 "\n", ts);
     		// END the following code is for test purposes
+
         }
     }
 }
@@ -150,18 +152,8 @@ void app_lichtschranke()
     //install gpio isr service
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_0, gpio_isr_handler, (void*) GPIO_INPUT_IO_0);
+    gpio_isr_handler_add(GPIO_INPUT_IO_0, lb_isr_handler, (void*) GPIO_INPUT_IO_0);
     //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void*) GPIO_INPUT_IO_1);
-
-    //remove isr handler for gpio number.
-    //gpio_isr_handler_remove(GPIO_INPUT_IO_0);
-
-    //int cnt = 0;
-    while(1) {
-
-    //	printf("cnt: %d\n", cnt++);
-    //    vTaskDelay(1000 / portTICK_RATE_MS);
-    }
+    gpio_isr_handler_add(GPIO_INPUT_IO_1, lb_isr_handler, (void*) GPIO_INPUT_IO_1);
 }
 
