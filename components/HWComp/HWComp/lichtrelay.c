@@ -15,9 +15,15 @@
  */
 
 /* +++++++++++++++++++++++++++ general includes +++++++++++++++++++++++++++++ */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "driver/gpio.h"
+
 #include "lichtrelay.h"
-
-
 
 /**
  * @brief 	Task for calculating the light barrier logic out of the message queue
@@ -28,17 +34,24 @@
 
 void lichtrelay_task(void* arg)
 {
-//	uint32_t OnOrOff;
-//	uint32_t status=LIGHT_OFF;
-	for(;;) {
+	uint32_t OnOrOff;
+	uint32_t status=LIGHT_OFF;
 
-//	        if (status==LIGHT_OFF) status=LIGHT_ON;
-//	        if (status==LIGHT_ON) status=LIGHT_OFF;
-//	        gpio_set_level(GPIO_OUTPUT, status);
-//	        vTaskDelay(1000 / portTICK_RATE_MS);
-//        if(xQueueReceive(lr_evt_queue, &OnOrOff, portMAX_DELAY)) {
-//            gpio_set_level(GPIO_OUTPUT, OnOrOff);
-//        }
+	//initially turn off
+	gpio_set_level(GPIO_OUTPUT, LIGHT_OFF);
+
+	while (1) {
+		(xQueueReceive(relay_queue, &OnOrOff, portMAX_DELAY));
+
+		if ((OnOrOff==LIGHT_OFF)&&(status==LIGHT_ON)) {
+			gpio_set_level(GPIO_OUTPUT, LIGHT_OFF);
+			status=LIGHT_OFF;
+		}
+		if ((OnOrOff==LIGHT_ON)&&(status==LIGHT_OFF)) {
+			gpio_set_level(GPIO_OUTPUT, LIGHT_ON);
+			status=LIGHT_ON;
+		}
+
     }
 }
 
@@ -70,14 +83,11 @@ void app_lichtrelay()
     //configure GPIO with the given settings
     gpio_config(&io_conf);
 
+
     //create a queue to handle gpio event from isr
-    //    lr_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+    relay_queue = xQueueCreate(10, sizeof(uint32_t));
     //start gpio task
-    //xTaskCreate(lichtrelay_task, "lichtrelay_task", 1024, NULL, 11, NULL);
-
-
-    //xQueueSendToBack(lr_evt_queue, &status, portMAX_DELAY);
-
+    xTaskCreate(lichtrelay_task, "lichtrelay_task", 2048, NULL, 10, NULL);
 
 }
 

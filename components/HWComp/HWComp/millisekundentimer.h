@@ -28,4 +28,9 @@ void IRAM_ATTR timer_group0_isr(void *para);
 void tg0_timer1_init();
 void app_timer();
 
+// external queues
+xQueueHandle ms_1_queue;		// Queue die alle 1 ms "feuert"
+xQueueHandle ms_50_queue;		// Queue die alle 50 ms "feuert"
+
+
 #endif /* MAIN_MILLISEKUNDENTIMER_H_ */

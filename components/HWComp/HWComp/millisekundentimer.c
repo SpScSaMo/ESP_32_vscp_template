@@ -27,8 +27,6 @@
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
 
 xQueueHandle timer_queue;
-xQueueHandle ms_1_queue;		// Queue die alle 1 ms "feuert"
-xQueueHandle ms_50_queue;		// Queue die alle 50 ms "feuert"
 
 // testregister
 //uint64_t timetest[1000];
@@ -46,14 +44,14 @@ void timer_evt_task(void *arg)
 //		while(loop<999){
 			xQueueReceive(timer_queue, &time, portMAX_DELAY);
 
-			//--> diese queue wird jede ms befüllt
 	        xQueueSendToBack(ms_1_queue, &time, 0);
 
-	        //--> diese queue wird jede 50ms befüllt
-	        mscount50++;
-	        if (mscount50==50) {
+	        if (mscount50==49) {
 	        	xQueueSendToBack(ms_50_queue, &time, 0);
 	        	mscount50=0;
+	        }
+	        else{
+	        	mscount50++;
 	        }
 //        	gettimeofday(&tv, NULL);
 //        	(sec) = tv.tv_sec;

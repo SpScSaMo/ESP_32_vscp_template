@@ -73,7 +73,7 @@
 // SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelay
 //******************************************************************
 #include "lichtschranke.h"
-//#include "lichtrelay.h"
+#include "lichtrelay.h"
 #include "millisekundentimer.h"
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -122,9 +122,12 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
  */
 void app_main(void)
 {
-    app_lichtschranke();
-//    app_lichtrelay();
+    // Start HW Components and millisecond timer
+	app_lichtschranke();
     app_timer();
+    app_lichtrelay();
+
+    //
     nvs_flash_init();
     tcpip_adapter_init();
     ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
