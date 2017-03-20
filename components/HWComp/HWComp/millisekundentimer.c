@@ -132,7 +132,7 @@ void app_timer()
     tg0_timer1_init();
 
     xTaskCreate(timer_evt_task, "timer_evt_task", 2048, NULL, 5, NULL);
-
+        
 //    while(1){
 //    	xQueueReceive(ms_50_queue, &time, portMAX_DELAY);
 //    	gettimeofday(&tv, NULL);
