@@ -21,12 +21,27 @@
 #define TIMER_INTERVAL1_SEC   (0.001)   /*!< test interval for timer 1 */
 
 
+#define __STDC_FORMAT_MACROS  // define for use of uint64_t in printf
+
+/* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
+struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
+
+xQueueHandle timer_queue;
+
+// testregister
+//uint64_t timetest[1000];
+
 void timer_evt_task(void *arg)
 {
+//	static uint32_t loop=0;
 	static uint64_t mscount50=0;
 	double time;
+//	uint32_t sec, us;
+//   	uint64_t ts;
 
 	while(1) {
+    	/* Start: Implementation for test purposes only */
+//		while(loop<999){
 			xQueueReceive(timer_queue, &time, portMAX_DELAY);
 
 	        xQueueSendToBack(ms_1_queue, &time, 0);
@@ -38,6 +53,18 @@ void timer_evt_task(void *arg)
 	        else{
 	        	mscount50++;
 	        }
+//        	gettimeofday(&tv, NULL);
+//        	(sec) = tv.tv_sec;
+//        	(us) = tv.tv_usec;
+//        	(ts) = (uint64_t)(sec*1000000+us);
+//        	timetest[loop]=ts;
+//            loop++;
+//			}
+//            for (int i=0;i<998;i++){
+//            		printf("Timestamp: %" PRIu64 "ms \n", timetest[i]/1000);
+//            }
+//            loop=0;
+        	/* End: Implementation for test purposes only */
 	}
 }
 
@@ -60,8 +87,7 @@ void IRAM_ATTR timer_group0_isr(void *para)
 
 
 /*
- * \brief initialize timer group0 hardware timer1
- *
+ * @brief timer group0 hardware timer1 init
  */
 void tg0_timer1_init()
 {
@@ -91,12 +117,14 @@ void tg0_timer1_init()
 }
 
 /**
- * \ Setup of Millisekundentimer (Main routine)
- *
- * brief creates queues and task for the millisekundentimer
+ * @brief In this test, we will test hardware timer0 and timer1 of timer group0.
  */
 void app_timer()
 {
+//    uint64_t time;
+//    uint32_t sec, us;
+//    uint64_t ts;
+
 	timer_queue = xQueueCreate(10, sizeof(double));
     ms_1_queue = xQueueCreate(10, sizeof(double));
     ms_50_queue = xQueueCreate(10, sizeof(double));
@@ -104,4 +132,14 @@ void app_timer()
     tg0_timer1_init();
 
     xTaskCreate(timer_evt_task, "timer_evt_task", 2048, NULL, 5, NULL);
+
+        
+//    while(1){
+//    	xQueueReceive(ms_50_queue, &time, portMAX_DELAY);
+//    	gettimeofday(&tv, NULL);
+//    	(sec) = tv.tv_sec;
+//    	(us) = tv.tv_usec;
+//    	(ts) = (uint64_t)(sec*1000000+us);
+//    	printf("Timestamp 50 ms: %" PRIu64 "ms \n", ts/1000);
+//    }
 }

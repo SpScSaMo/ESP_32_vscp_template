@@ -68,6 +68,7 @@
 #include "vscp_class.h"
 #include "vscp_type.h"
 #include "vscp_firmware.h"
+#include "vscp_millisecond_timer.h"
 
 //******************************************************************
 // SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelay
@@ -77,35 +78,6 @@
 #include "millisekundentimer.h"
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-/* init_millisecond_clock
- * # The firmware code rely on a millisecond clock.
- * # First add this to your code and make sure that it works.
- *
- * #vscp_timer and vscp_configtimer is the important things here. 
- * #They are both defined by the firmware code and should be increased 
- * #by on every millisecond, so that is what we do in our code.
- *
- *
- * http://www.vscp.org/docs/vscpfirmware/doku.php?id=a_millisecond_clock
- */
-void init_millisecond_clock(void) {
-    
-    /*
-    // Clock
-    if ( INTCONbits.TMR0IF ) { // If a Timer0 Interrupt, Then...
-        // Reload value for 1 ms reolution
-        WriteTimer0(TIMER0_RELOAD_VALUE);
-        vscp_timer++;
-        vscp_configtimer++;
-        measurement_clock++;
-        timeout_clock++;
-        ...
-    */
-    
-    
-}
 
 
 esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -123,11 +95,18 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 void app_main(void)
 {
     // Start HW Components and millisecond timer
-	app_timer();
 	app_lichtschranke();
     app_lichtrelay();
 
     //
+    
+    //--VSCP------------------------//
+    //init Millisecond_Timer
+    init_vscp_millisecond_timer();
+    
+    
+    //++++++++++++++++++++++++++++++
+    
     nvs_flash_init();
     tcpip_adapter_init();
     ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
