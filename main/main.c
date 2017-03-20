@@ -123,8 +123,8 @@ esp_err_t event_handler(void *ctx, system_event_t *event)
 void app_main(void)
 {
     // Start HW Components and millisecond timer
+	app_timer();
 	app_lichtschranke();
-    app_timer();
     app_lichtrelay();
 
     //

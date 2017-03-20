@@ -12,8 +12,21 @@
 /* +++++++++++++++++++++++++++ global queue +++++++++++++++++++++++++++++ */
 xQueueHandle relay_queue;
 
-
+/*
+ * \brief Task for Relay
+ *
+ * This function writes to the defined GPIO port as it receives a post in the relay queue
+ *
+ * */
 void lichtrelay_task(void* arg);
+
+/*
+ * \brief Main routine for Relay
+ *
+ * This function initializes the necessary resources for the GPIO write
+ *
+ * */
+
 void app_lichtrelay();
 
 

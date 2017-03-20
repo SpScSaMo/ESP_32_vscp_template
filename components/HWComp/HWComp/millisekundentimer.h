@@ -31,6 +31,7 @@ void app_timer();
 // external queues
 xQueueHandle ms_1_queue;		// Queue die alle 1 ms "feuert"
 xQueueHandle ms_50_queue;		// Queue die alle 50 ms "feuert"
+xQueueHandle timer_queue;       // interne Queue für millisekundentimer
 
 
 #endif /* MAIN_MILLISEKUNDENTIMER_H_ */
