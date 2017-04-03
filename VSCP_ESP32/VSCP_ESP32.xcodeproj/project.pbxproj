@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		A316523F1E6DDA9700A988FD /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = ../main/main.c; sourceTree = "<group>"; };
+		A325E4E81E92AA10009D382A /* components */ = {isa = PBXFileReference; lastKnownFileType = folder; name = components; path = ../components; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -15,6 +16,7 @@
 			isa = PBXGroup;
 			children = (
 				A316523F1E6DDA9700A988FD /* main.c */,
+				A325E4E81E92AA10009D382A /* components */,
 			);
 			sourceTree = "<group>";
 		};

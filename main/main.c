@@ -1,4 +1,4 @@
-//##################################################################
+22//##################################################################
 //Projekt: VSCP Very Simple Control Protokoll implementation ESP32 #
 //##################################################################
 //
@@ -57,7 +57,6 @@
 #define TIMER_INTERVAL1_SEC   (5.78)   /*!< test interval for timer 1 */
 #define TEST_WITHOUT_RELOAD   0   /*!< example of auto-reload mode */
 #define TEST_WITH_RELOAD   1      /*!< example without auto-reload mode */
-#define ESP_INTR_FLAG_DEFAULT 0
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -78,85 +77,14 @@
 #include "lichtrelay.h"
 #include "millisekundentimer.h"
 
-
-//******************************************************************
-// Prototypes - ESP32 - THING - Overview ;-)
-//******************************************************************
-
-esp_err_t event_handler(void *ctx, system_event_t *event);
-void init_button0(void);
-
-/* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-
-/* error Handling
- *
- */
 esp_err_t event_handler(void *ctx, system_event_t *event)
 {
     return ESP_OK;
 }
 
-/* Button 0 ISR
- *
- * This is the ISR for Button 0 on falling edge
- *
- * \author: Christian Mödlhammer
- */
-void IRAM_ATTR btn_isr_handler(void* arg)
-{
-	uint32_t sec, us;
-	uint64_t ts,ts_init,ts_next;
-
-	// Null für den Ausgangswert
-	vscp_initbtncnt=0;
-
-	if (gpio_get_level(GPIO_NUM_0)==0){
-
-		gettimeofday(&tv, NULL);
-			(sec) = tv.tv_sec;
-			(us) = tv.tv_usec;
-			(ts) = (uint64_t)(sec*1000000+us);
-			ts_init=ts;
-			ts_next=ts;
-			while ((ts_next-ts_init)<250000){ // wait for 250 milliseconds
-				gettimeofday(&tv, NULL);
-				(sec) = tv.tv_sec;
-				(us) = tv.tv_usec;
-				(ts) = (uint64_t)(sec*1000000+us);
-				ts_next=ts;
-			}
-
-			//if button pressed for more than 250 milliseconds
-			if (gpio_get_level(GPIO_NUM_0)==0) vscp_initbtncnt=251;
-
-	}
-
-}
-
-/*
- * Button init
- *
- * initiatlizes the button of the ESP 32 on GPIO 0 with an interrupt
- *
- * \author Christian M.
- *
- */
-void init_button(void){
-
-	gpio_set_pull_mode(GPIO_NUM_0,GPIO_PULLUP_ONLY);
-	gpio_set_intr_type(GPIO_NUM_0, GPIO_INTR_ANYEDGE);
-	gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT);
-
-    //install gpio isr service
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_NUM_0, btn_isr_handler, (void*) GPIO_NUM_0);
-
-
-}
 
 
 /* app_main()
@@ -166,19 +94,15 @@ void init_button(void){
  */
 void app_main(void)
 {
-
-
-	// Start HW Components and millisecond timer
-	app_timer(); // starting the timer with the queues 1 ms and 50 ms
-	app_lichtschranke(); // starting the lightbarrier logic
-    app_lichtrelay(); // starting the lightrelay logic
-
-
-    //--VSCP------------------------//
-    init_vscp_millisecond_timer();
-    init_button(); // initializes Button and interrupt
+    // Start HW Components and millisecond timer
+	app_lichtschranke();
+    app_lichtrelay();
 
     //
+    
+    //--VSCP------------------------//
+    //init Millisecond_Timer
+    init_vscp_millisecond_timer();
 
     //++++++++++++++++++++++++++++++
     
@@ -200,17 +124,12 @@ void app_main(void)
     ESP_ERROR_CHECK( esp_wifi_start() );
     ESP_ERROR_CHECK( esp_wifi_connect() );
 
-    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT);
-
+    gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT);
     int level = 0;
-
     while (true) {
-    	gpio_set_level(GPIO_NUM_5, level);
+        gpio_set_level(GPIO_NUM_4, level);
         level = !level;
         vTaskDelay(300 / portTICK_PERIOD_MS);
-        printf("Value of vscp_initbtncnt: %d\n", vscp_initbtncnt);
     }
 }
-
-
 
