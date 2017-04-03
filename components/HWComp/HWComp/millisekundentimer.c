@@ -24,7 +24,7 @@
 #define __STDC_FORMAT_MACROS  // define for use of uint64_t in printf
 
 /* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
+// already defined in main: struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
 
 xQueueHandle timer_queue;
 
