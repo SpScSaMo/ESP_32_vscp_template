@@ -103,8 +103,7 @@ void app_main(void)
     //--VSCP------------------------//
     //init Millisecond_Timer
     init_vscp_millisecond_timer();
-    
-    
+
     //++++++++++++++++++++++++++++++
     
     nvs_flash_init();
