@@ -1,4 +1,4 @@
-22//##################################################################
+//##################################################################
 //Projekt: VSCP Very Simple Control Protokoll implementation ESP32 #
 //##################################################################
 //
@@ -158,7 +158,7 @@ void init_button0(void){
     //install gpio isr service
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_NUM_0, btn_isr_handler, (void*) GPIO_NUM_0);
+    gpio_isr_handler_add(GPIO_NUM_0, btn0_isr_handler, (void*) GPIO_NUM_0);
 
 }
 
@@ -178,7 +178,7 @@ void app_main(void)
     
     //--VSCP------------------------//
     init_vscp_millisecond_timer();
-    init_button(); // initializes Button and interrupt
+    init_button0(); // initializes Button and interrupt
 
     //++++++++++++++++++++++++++++++
     
