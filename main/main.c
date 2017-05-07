@@ -73,6 +73,7 @@
 // SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelay
 //******************************************************************
 #include "lichtschranke.h"
+#include "lichtsensor.h"
 #include "lichtrelay.h"
 #include "millisekundentimer.h"
 
@@ -170,9 +171,10 @@ void init_button0(void){
 void app_main(void)
 {
     // Start HW Components and millisecond timer
+	app_lichtsensor(); // starting light sensor
 	app_timer(); // starting the timer with the queues 1 ms and 50 ms
-	app_lichtschranke(); // starting the lightbarrier logic
-	app_lichtrelay(); // starting the lightrelay logic
+	app_lichtschranke(); // starting the light barrier logic
+	app_lichtrelay(); // starting the light relay logic
 
     //
     
