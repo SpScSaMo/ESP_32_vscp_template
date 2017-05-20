@@ -106,14 +106,13 @@
 
 /****************  Prototypes **********************************************/
 
-
-
 esp_err_t i2c_master_sensor_read(i2c_port_t i2c_num);
 void i2c_master_init();
 void i2c_read_task(void* arg);
 uint32_t calculateLux(uint16_t ch0, uint16_t ch1);
 void app_lichtsensor(void); // The main task for I2C light sensor TSL2561
 
+xQueueHandle lichtsensor_queue;
 
 
 #endif /* MAIN_LICHTSENSOR_H_ */

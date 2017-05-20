@@ -37,6 +37,8 @@
 
 #include "esp_err.h"            //for error handling
 #include "esp_intr_alloc.h"     //is used for interrupts
+#include "config.h"				/* this has the defines for all the sensors
+								 and actors of the esp32_Thing */
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -64,6 +66,7 @@
 //******************************************************************
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "vscp_class.h"
 #include "vscp_type.h"
 #include "vscp_firmware.h"
@@ -77,6 +80,51 @@
 #include "lichtrelay.h"
 #include "millisekundentimer.h"
 
+
+//******************************************************************
+// INCLUDES - FOR TCP Connection
+//******************************************************************
+//#include <stdio.h>
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include <math.h>
+#include <sys/time.h>
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+#include "errno.h"
+#include "string.h"
+//#include "error.h"
+
+
+
+
+static const char *TAG = "CLIENTE";
+
+//#define DEBUG(...) ESP_LOGD(TAG,__VA_ARGS__);
+#define INFO(...) ESP_LOGI(TAG,__VA_ARGS__);
+#define ERROR(...) ESP_LOGE(TAG,__VA_ARGS__);
+
+#define delay_ms(ms) vTaskDelay((ms) / portTICK_RATE_MS)
+
+
+
+#define LEN_DATA 512
+
+volatile char mydata[LEN_DATA];
+
+//volatile char mydata[] = "TestData:12345";//datos de este dispositivo
+
+static EventGroupHandle_t wifi_event_group; //manejo de banderas de conexiones
+
+const int STA_CONNECTED_BIT = BIT0;// bandera de conexion sta
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -87,11 +135,6 @@
 //******************************************************************
 
 
-/* error Handling
- *
- */
-esp_err_t event_handler(void *ctx, system_event_t *event);
-
 void IRAM_ATTR btn0_isr_handler(void* arg);
 void init_button0(void);
 
@@ -100,8 +143,27 @@ struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is he
 
 
 
-esp_err_t event_handler(void *ctx, system_event_t *event)
-{
+/**
+ * WIFI Event Handler, falls die Verbindung abreist oder so ;-)
+ */
+static esp_err_t event_handler(void *ctx, system_event_t *event){
+    switch(event->event_id) {
+    case SYSTEM_EVENT_STA_START:
+        printf("SYSTEM_EVENT_STA_START\n");
+		esp_wifi_connect();
+        break;
+    case SYSTEM_EVENT_STA_GOT_IP:
+    	printf("SYSTEM_EVENT_STA_GOT_IP\n");
+    	xEventGroupSetBits(wifi_event_group, STA_CONNECTED_BIT);
+        break;
+    case SYSTEM_EVENT_STA_DISCONNECTED:
+    	printf("SYSTEM_EVENT_STA_DISCONNECTED\n");
+    	esp_wifi_connect();
+        xEventGroupClearBits(wifi_event_group, STA_CONNECTED_BIT);
+        break;
+    default:
+        break;
+    }
     return ESP_OK;
 }
 
@@ -142,6 +204,17 @@ void IRAM_ATTR btn0_isr_handler(void* arg)
 
 }
 
+/**
+ * builds a char array out of a string
+ */
+void stringToSendChar(char text[]){
+
+	for(int i=0;i<LEN_DATA;i++){
+		mydata[i]=text[i];
+	}
+
+}
+
 /*
  * Button init
  *
@@ -163,6 +236,94 @@ void init_button0(void){
 
 }
 
+/**
+ * initializes the WIFI and the connection to the in config.h specified Access Point
+ *
+ *
+ */
+static void initialise_wifi(void){
+
+    tcpip_adapter_init();
+    wifi_event_group = xEventGroupCreate();
+    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+    wifi_config_t sta_config = {
+        .sta = {
+            .ssid = WIFIROUTER,
+            .password = WIFIPASS,
+			.bssid_set = 0
+        }
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_connect());
+}
+
+
+
+
+/**
+ *	Socket öffnen und Daten senden
+ */
+static void task_socket(void *someirrelevantdata){
+  struct timeval  tv1, tv2;
+  uint32_t luxW;
+  char text[LEN_DATA];
+
+  while(1){
+    gettimeofday(&tv1, NULL);
+    xEventGroupWaitBits(
+              wifi_event_group,   /* The event group being tested. */
+              STA_CONNECTED_BIT, /* The bits within the event group to wait for. */
+              false,        /* BIT_0 & BIT_4 should be cleared before returning. */
+              true,       /* Don't wait for both bits, either bit will do. */
+              portMAX_DELAY );
+  	int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+  	   ERROR("SOCKET: %d ERRno:%d", sock, errno);
+    }else{
+    	struct sockaddr_in serverAddress;
+    	serverAddress.sin_family = AF_INET;
+    	inet_pton(AF_INET, IPDEAMON, &serverAddress.sin_addr.s_addr);
+    	serverAddress.sin_port = htons(PORT_NUMBER);
+
+    	int rs = connect(sock, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in));
+      if(rs<0){
+    	   ERROR("Verbindungsfehler: %d ERRno:%d", sock, errno);
+         close(sock);
+      }else{
+    	xQueueReceive(lichtsensor_queue, &luxW, portMAX_DELAY);
+    	//printf("Luxreceived: %d\n",luxW);
+    	strcpy(text,"GET /endpoint/test?lux=");
+    	char tmp[sizeof(uint32_t)];
+    	sprintf(tmp,"%d", luxW);
+    	strcat(text, tmp);
+    	strcat(text,"  HTTP/1.1\n");
+    	stringToSendChar(text);
+    	rs = write(sock,(char*)mydata,LEN_DATA);
+        close(sock);
+        if(rs<0){
+      	   ERROR("Schreibfehler: %d ERRno:%d", sock, errno);
+        }else{
+          // si todo esto para esperar de forma chiva solo cuando todo sale bien:D
+          do{
+            delay_ms(5);
+            gettimeofday(&tv2,NULL);
+          }while(
+            ((tv2.tv_usec - tv1.tv_usec)/1000 +
+            (tv2.tv_sec - tv1.tv_sec)*1000)<1000
+          );
+        }
+      }
+    }
+  }
+}
+
+
+
 /* app_main()
  *
  *  This Function is the Main Funktion of the Project
@@ -170,11 +331,17 @@ void init_button0(void){
  */
 void app_main(void)
 {
-    // Start HW Components and millisecond timer
+	nvs_flash_init(); //Initialize NVS flash storage with layout given in the partition table
+
+	// Start HW Components and millisecond timer
 	app_lichtsensor(); // starting light sensor
 	app_timer(); // starting the timer with the queues 1 ms and 50 ms
 	app_lichtschranke(); // starting the light barrier logic
 	app_lichtrelay(); // starting the light relay logic
+
+	// Start WIFI connection
+	initialise_wifi();
+    xTaskCreate(&task_socket, "socket", 2048  , NULL, 5, NULL);
 
     //
     
@@ -182,33 +349,16 @@ void app_main(void)
     init_vscp_millisecond_timer();
     init_button0(); // initializes Button and interrupt
 
-    //++++++++++++++++++++++++++++++
     
-    nvs_flash_init();
-    tcpip_adapter_init();
-    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    wifi_config_t sta_config = {
-        .sta = {
-            .ssid = "openHAB",
-            .password = "openHABtest",
-            .bssid_set = false
-        }
-    };
-    ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &sta_config) );
-    ESP_ERROR_CHECK( esp_wifi_start() );
-    ESP_ERROR_CHECK( esp_wifi_connect() );
 
     gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT);
     int level = 0;
     while (true) {
-        gpio_set_level(GPIO_NUM_5, level);
-        level = !level;
-        vTaskDelay(300 / portTICK_PERIOD_MS);
-        printf("Value of vscp_initbtncnt: %d\n", vscp_initbtncnt);
+    		gpio_set_level(GPIO_NUM_5, level);
+    	        level = !level;
+    	        vTaskDelay(300 / portTICK_PERIOD_MS);
+
+ //       printf("Value of vscp_initbtncnt: %d\n", vscp_initbtncnt);
     }
 }
 
