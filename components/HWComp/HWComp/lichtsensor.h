@@ -10,6 +10,7 @@
 
 /****************  INCLUDES for the light sensor and I2C ********************/
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
@@ -18,6 +19,7 @@
 #include "esp_err.h"
 #include "driver/gpio.h"
 #include "sdkconfig.h"
+
 
 
 /**********************  Defines ********************************/

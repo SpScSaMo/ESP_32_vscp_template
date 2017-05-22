@@ -4,16 +4,25 @@
 #include "esp_wifi_types.h"
 
 /* +++++++++++++++++++++++++++ defines for ESP32 Thing +++++++++++++++++++++++++++++ */
-#define THING_ID		123456789
-#define CHANNEL1 		"Lightsensor"
-#define CHANNEL2 		"LightbarrierCounter"
-#define CHANNEL3 		"Lightswitch"
-#define CHANNEL4 		"Motorswitch"
-#define WIFIROUTER		"???"
-#define WIFIPASS		"???"
+#define THING_ID		"ESP32_123456"
+#define CH1 			"Lightsensor"
+#define CH2		 		"LightbarrierCounter"
+#define CH3		 		"Lightswitch"
+#define CH4		 		"Motorswitch"
+#define WIFIROUTER		"Bluemoon Sky"
+#define WIFIPASS		""
 #define WIFIAUTH        WIFI_AUTH_WPA_PSK
-#define IPDEAMON		"10.0.0.14"
-#define PORT_NUMBER 	9592
+#define IPDEAMON		"10.0.0.14" //not used
+#define PORT_NUMBER 	9592	//not used
 
+/* Constants that aren't configurable in menuconfig */
+#define WEB_SERVER "btdeamon20170517084951.azurewebsites.net"
+#define WEB_PORT 80
+
+typedef struct messageparameters {
+    char type[20];
+    char measurementtype[10];
+    float value;
+}messageparameters;
 
 #endif

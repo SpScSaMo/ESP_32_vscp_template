@@ -103,8 +103,30 @@
 
 
 
+//******************************************************************
+// INCLUDES - FOR http Connection
+//******************************************************************
 
-static const char *TAG = "CLIENTE";
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
+
+
+/**************************************************/
+
+//static const char *TAG = "CLIENTE";
 
 //#define DEBUG(...) ESP_LOGD(TAG,__VA_ARGS__);
 #define INFO(...) ESP_LOGI(TAG,__VA_ARGS__);
@@ -120,12 +142,17 @@ volatile char mydata[LEN_DATA];
 
 //volatile char mydata[] = "TestData:12345";//datos de este dispositivo
 
-static EventGroupHandle_t wifi_event_group; //manejo de banderas de conexiones
+/* FreeRTOS event group to signal when we are connected & ready to make a request */
+static EventGroupHandle_t wifi_event_group;
 
-const int STA_CONNECTED_BIT = BIT0;// bandera de conexion sta
+/* The event group allows multiple bits for each event,
+   but we only care about one event - are we connected
+   to the AP with an IP? */
+const int STA_CONNECTED_BIT = BIT0;
 
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//+++++++++++++ for http requests ++++++++++++++++++++++++++++++++++++++
+static const char *TAG = "example";
 
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -140,6 +167,8 @@ void init_button0(void);
 
 /* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
+
+
 
 
 
@@ -295,13 +324,14 @@ static void task_socket(void *someirrelevantdata){
     	   ERROR("Verbindungsfehler: %d ERRno:%d", sock, errno);
          close(sock);
       }else{
-    	xQueueReceive(lichtsensor_queue, &luxW, portMAX_DELAY);
+    	//xQueueReceive(lichtsensor_queue, &luxW, portMAX_DELAY);
     	//printf("Luxreceived: %d\n",luxW);
-    	strcpy(text,"GET /endpoint/test?lux=");
-    	char tmp[sizeof(uint32_t)];
-    	sprintf(tmp,"%d", luxW);
-    	strcat(text, tmp);
-    	strcat(text,"  HTTP/1.1\n");
+    	strcpy(text,"GET /api/Thing/set?thingId=coolman&thingType=1&measurementType=lux&value=400 HTTP/1.1\r\n");
+    	//char tmp[sizeof(uint32_t)];
+    	//sprintf(tmp,"%d", luxW);
+    	//strcat(text, tmp);
+    	strcat(text,"btdeamon20170517084951.azurewebsites.net");
+    	strcat(text,"text/html");
     	stringToSendChar(text);
     	rs = write(sock,(char*)mydata,LEN_DATA);
         close(sock);
@@ -323,6 +353,107 @@ static void task_socket(void *someirrelevantdata){
 }
 
 
+static void http_get_task(void *pvParameters)
+{
+    const struct addrinfo hints = {
+        .ai_family = AF_INET,
+        .ai_socktype = SOCK_STREAM,
+    };
+    struct addrinfo *res;
+    struct in_addr *addr;
+    int s, r;
+    char recv_buf[64];
+    messageparameters mpara;
+    char request[500];
+
+    while(1) {
+        /* Wait for the callback to set the CONNECTED_BIT in the
+           event group.
+        */
+        xEventGroupWaitBits(wifi_event_group, STA_CONNECTED_BIT,
+                            false, true, portMAX_DELAY);
+        ESP_LOGI(TAG, "Connected to AP");
+
+        int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
+
+        if(err != 0 || res == NULL) {
+            ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        /* Code to print the resolved IP.
+           Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
+        addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
+
+        s = socket(res->ai_family, res->ai_socktype, 0);
+        if(s < 0) {
+            ESP_LOGE(TAG, "... Failed to allocate socket.");
+            freeaddrinfo(res);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "... allocated socket\r\n");
+
+        if(connect(s, res->ai_addr, res->ai_addrlen) != 0) {
+            ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
+            close(s);
+            freeaddrinfo(res);
+            vTaskDelay(4000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
+        ESP_LOGI(TAG, "... connected");
+        freeaddrinfo(res);
+        strcpy(mpara.type,"Lightsensor");
+        strcpy(mpara.measurementtype,"lux");
+        mpara.value=456.23;
+        //xQueueReceive(lichtsensor_queue, &mpara, portMAX_DELAY);
+        strcpy(request, "GET /api/Thing/set?thingId=");
+        strcat(request, THING_ID);
+        strcat(request, "&thingType=");
+        strcat(request, mpara.type);
+        strcat(request, "&measurementType=");
+        strcat(request, mpara.measurementtype);
+        strcat(request, "&value=");
+        char tmp[sizeof(float)];
+        sprintf(tmp,"%2.0f", mpara.value);
+        strcat(request, tmp);
+        strcat(request, " HTTP/1.0\r\n");
+        strcat(request, "Host: ");
+        strcat(request, WEB_SERVER);
+        strcat(request, "\r\n");
+        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+        strcat(request, "\r\n");
+
+        if (write(s, request, strlen(request)) < 0) {
+            ESP_LOGE(TAG, "... socket send failed");
+            close(s);
+            vTaskDelay(4000 / portTICK_PERIOD_MS);
+            continue;
+        }
+        ESP_LOGI(TAG, "... socket send success");
+
+        /* Read HTTP response */
+        do {
+            bzero(recv_buf, sizeof(recv_buf));
+            r = read(s, recv_buf, sizeof(recv_buf)-1);
+            for(int i = 0; i < r; i++) {
+                putchar(recv_buf[i]);
+            }
+        } while(r > 0);
+
+        ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d\r\n", r, errno);
+        close(s);
+        for(int countdown = 10; countdown >= 0; countdown--) {
+            ESP_LOGI(TAG, "%d... ", countdown);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        }
+        ESP_LOGI(TAG, "Starting again!");
+    }
+}
+
 
 /* app_main()
  *
@@ -341,8 +472,8 @@ void app_main(void)
 
 	// Start WIFI connection
 	initialise_wifi();
-    xTaskCreate(&task_socket, "socket", 2048  , NULL, 5, NULL);
-
+    //xTaskCreate(&task_socket, "socket", 2048  , NULL, 5, NULL);
+    xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 5, NULL);
     //
     
     //--VSCP------------------------//

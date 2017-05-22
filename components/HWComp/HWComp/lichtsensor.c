@@ -8,6 +8,7 @@
 
 
 #include "lichtsensor.h"
+#include "../../../main/config.h"
 
 
 xSemaphoreHandle print_mux; // Semaphore to handle printf()!
@@ -227,6 +228,7 @@ void i2c_read_task(void* arg)
     int ret;
     uint32_t task_idx = (uint32_t) arg;
     uint32_t luxwert;
+    messageparameters mpara;
 
     while (1) {
         ret = i2c_master_sensor_read(I2C_MASTER_NUM);
@@ -242,7 +244,10 @@ void i2c_read_task(void* arg)
             vTaskDelay( 2000 / portTICK_RATE_MS);
             luxwert=calculateLux((uint16_t)( sensor_ch0_data_h << 8 | sensor_ch0_data_l ),(uint16_t)( sensor_ch1_data_h << 8 | sensor_ch1_data_l ));
             printf("lux: %d\n", luxwert);
-        	xQueueSendToBack(lichtsensor_queue, &luxwert, 0);
+            strcpy(mpara.type,CH1);
+            strcpy(mpara.measurementtype,"lux");
+            mpara.value=(float)luxwert;
+        	xQueueSendToBack(lichtsensor_queue, &mpara, 0);
         } else {
             printf("No ack, sensor not connected...skip...\n");
         }
@@ -259,7 +264,7 @@ void app_lichtsensor(void)
 
     i2c_master_init();
     //create a queue to handle gpio event from isr
-    lichtsensor_queue = xQueueCreate(10, sizeof(uint32_t));
+    lichtsensor_queue = xQueueCreate(10, sizeof(messageparameters));
     xTaskCreate(i2c_read_task, "i2c_read_task", 1024 * 2, NULL, 10, NULL);
 }
 
