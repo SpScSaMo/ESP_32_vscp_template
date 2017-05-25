@@ -19,6 +19,7 @@
  */
 
 #include "lichtschranke.h"
+#include "../../../main/config.h"
 
 /**
  * @brief 	Task for calculating the light barrier logic out of the message queue
@@ -35,9 +36,10 @@ void ligthbarrier_task(void* arg)
 	uint32_t io_value_LB1=0;
 	uint32_t io_value_LB2=0;
 	uint32_t timecounter=0;
-	int32_t personen=0;
+	uint32_t personen=0;
 	uint32_t firstSet=0;
 	uint32_t relaystatus=0;
+    messageparameters mparalb;
 
 	while (1){
 
@@ -88,12 +90,20 @@ void ligthbarrier_task(void* arg)
 					// here the counting is executed, after there was no change for 1 second
 					if (timecounter==20){
 						if ((firstLightBarrier==GPIO_INPUT_IO_LB1)&&(lastLightBarrier==GPIO_INPUT_IO_LB2)) personen++;
-						if ((firstLightBarrier==GPIO_INPUT_IO_LB2)&&(lastLightBarrier==GPIO_INPUT_IO_LB1)) personen--;
-						if (personen<0) personen=0;
+						if ((firstLightBarrier==GPIO_INPUT_IO_LB2)&&(lastLightBarrier==GPIO_INPUT_IO_LB1)){
+							if (personen==0) personen=0;
+							else personen--;
+						}
 						firstLightBarrier=0;
 						lastLightBarrier=0;
 						firstSet=0;
 						printf("Personen im Raum: %d\n",personen);
+
+						// Anzahl der Personen in die Queue stellen
+			            strcpy(mparalb.type,CH2);
+			            strcpy(mparalb.measurementtype,"per");
+			            mparalb.value=personen;
+			        	xQueueSendToBack(sensor_queue, &mparalb, 0);
 
 						// für das Relay an die Queue senden!
 						if (personen>1) relaystatus=LIGHT_ON;
@@ -135,7 +145,7 @@ void app_lichtschranke(void)
     gpio_config(&io_conf);
     //start light barrier task
 
-	//    • pvTaskCode – Pointer to the task function. In C programming, we can simply
+    //    • pvTaskCode – Pointer to the task function. In C programming, we can simply
 	//    supply the name of a function or, as has been seen in some samples, the
 	//    address of the name of the function. Apparently these equate to items that are
 	//    close enough to be used interchangablly.

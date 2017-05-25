@@ -73,12 +73,13 @@
 #include "vscp_millisecond_timer.h"
 
 //******************************************************************
-// SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelay
+// SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelais + Lichtsensor + Jalousie
 //******************************************************************
 #include "lichtschranke.h"
 #include "lichtsensor.h"
 #include "lichtrelay.h"
 #include "millisekundentimer.h"
+#include "jalousie.h"
 
 
 //******************************************************************
@@ -299,7 +300,7 @@ static void initialise_wifi(void){
  */
 static void task_socket(void *someirrelevantdata){
   struct timeval  tv1, tv2;
-  uint32_t luxW;
+  //uint32_t luxW;
   char text[LEN_DATA];
 
   while(1){
@@ -367,7 +368,10 @@ static void http_get_task(void *pvParameters)
     char request[500];
 
     while(1) {
-        /* Wait for the callback to set the CONNECTED_BIT in the
+
+    	xQueueReceive(sensor_queue, &mpara, portMAX_DELAY);
+
+    	/* Wait for the callback to set the CONNECTED_BIT in the
            event group.
         */
         xEventGroupWaitBits(wifi_event_group, STA_CONNECTED_BIT,
@@ -406,10 +410,10 @@ static void http_get_task(void *pvParameters)
 
         ESP_LOGI(TAG, "... connected");
         freeaddrinfo(res);
-        strcpy(mpara.type,"Lightsensor");
-        strcpy(mpara.measurementtype,"lux");
-        mpara.value=456.23;
-        //xQueueReceive(lichtsensor_queue, &mpara, portMAX_DELAY);
+//        strcpy(mpara.type,"Lightsensor");
+//        strcpy(mpara.measurementtype,"lux");
+//        mpara.value=456.23;
+//
         strcpy(request, "GET /api/Thing/set?thingId=");
         strcat(request, THING_ID);
         strcat(request, "&thingType=");
@@ -417,8 +421,8 @@ static void http_get_task(void *pvParameters)
         strcat(request, "&measurementType=");
         strcat(request, mpara.measurementtype);
         strcat(request, "&value=");
-        char tmp[sizeof(float)];
-        sprintf(tmp,"%2.0f", mpara.value);
+        char tmp[sizeof(uint32_t)];
+        sprintf(tmp,"%d", mpara.value);
         strcat(request, tmp);
         strcat(request, " HTTP/1.0\r\n");
         strcat(request, "Host: ");
@@ -446,10 +450,11 @@ static void http_get_task(void *pvParameters)
 
         ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d\r\n", r, errno);
         close(s);
-        for(int countdown = 10; countdown >= 0; countdown--) {
-            ESP_LOGI(TAG, "%d... ", countdown);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-        }
+//        for(int countdown = 10; countdown >= 0; countdown--) {
+//            ESP_LOGI(TAG, "%d... ", countdown);
+//            vTaskDelay(1000 / portTICK_PERIOD_MS);
+//        }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         ESP_LOGI(TAG, "Starting again!");
     }
 }
@@ -462,13 +467,19 @@ static void http_get_task(void *pvParameters)
  */
 void app_main(void)
 {
+	uint32_t UpOrDownMain;
 	nvs_flash_init(); //Initialize NVS flash storage with layout given in the partition table
 
+
+	//create a sensor queue for sending values
+	    sensor_queue = xQueueCreate(10, sizeof(messageparameters));
 	// Start HW Components and millisecond timer
 	app_lichtsensor(); // starting light sensor
 	app_timer(); // starting the timer with the queues 1 ms and 50 ms
 	app_lichtschranke(); // starting the light barrier logic
 	app_lichtrelay(); // starting the light relay logic
+	app_jalousie(); // starting the jalousie task
+
 
 	// Start WIFI connection
 	initialise_wifi();
@@ -478,7 +489,7 @@ void app_main(void)
     
     //--VSCP------------------------//
     init_vscp_millisecond_timer();
-    init_button0(); // initializes Button and interrupt
+    //init_button0(); // initializes Button and interrupt
 
     
 
@@ -487,6 +498,21 @@ void app_main(void)
     while (true) {
     		gpio_set_level(GPIO_NUM_5, level);
     	        level = !level;
+//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
+//    	        UpOrDownMain=JALOUSIE_UP;
+//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
+//    	        ESP_LOGI(TAG, "UP sent!");
+//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
+//    	        UpOrDownMain=JALOUSIE_OFF;
+//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
+//    	        ESP_LOGI(TAG, "OFF sent!");
+//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
+//    	        UpOrDownMain=JALOUSIE_DOWN;
+//    	        ESP_LOGI(TAG, "DOWN sent!");
+//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
+//    	        vTaskDelay(10000 / portTICK_PERIOD_MS);
+// this was just implemented for the test of the jalousie_queue);
+
     	        vTaskDelay(300 / portTICK_PERIOD_MS);
 
  //       printf("Value of vscp_initbtncnt: %d\n", vscp_initbtncnt);

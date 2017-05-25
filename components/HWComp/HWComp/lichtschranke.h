@@ -24,6 +24,11 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 #define DEBUG 0
 
+
+
+/* +++++++++++++++++++++++++++ message queue +++++++++++++++++++++++++++++ */
+//xQueueHandle lightbarrier_queue; //sends the current count of people on change
+
 /*
  * \brief Task with logic for light barrier
  *

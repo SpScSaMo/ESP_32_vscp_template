@@ -48,6 +48,7 @@ void timer_evt_task(void *arg)
 
 	        if (mscount50==49) {
 	        	xQueueSendToBack(ms_50_queue, &time, 0);
+	        	xQueueSendToBack(ms_50_queue2, &time, 0);
 	        	mscount50=0;
 	        }
 	        else{
@@ -128,6 +129,7 @@ void app_timer()
 	timer_queue = xQueueCreate(10, sizeof(double));
     ms_1_queue = xQueueCreate(10, sizeof(double));
     ms_50_queue = xQueueCreate(10, sizeof(double));
+    ms_50_queue2 = xQueueCreate(10, sizeof(double));
 
     tg0_timer1_init();
 

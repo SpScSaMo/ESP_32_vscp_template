@@ -6,12 +6,12 @@
 /* +++++++++++++++++++++++++++ defines for ESP32 Thing +++++++++++++++++++++++++++++ */
 #define THING_ID		"ESP32_123456"
 #define CH1 			"Lightsensor"
-#define CH2		 		"LightbarrierCounter"
+#define CH2		 		"Lightbarrier"
 #define CH3		 		"Lightswitch"
 #define CH4		 		"Motorswitch"
 #define WIFIROUTER		"Bluemoon Sky"
-#define WIFIPASS		""
-#define WIFIAUTH        WIFI_AUTH_WPA_PSK
+#define WIFIPASS		"Cgm8Schegar38!"
+//#define WIFIAUTH        WIFI_AUTH_WPA_PSK
 #define IPDEAMON		"10.0.0.14" //not used
 #define PORT_NUMBER 	9592	//not used
 
@@ -19,10 +19,13 @@
 #define WEB_SERVER "btdeamon20170517084951.azurewebsites.net"
 #define WEB_PORT 80
 
+/* +++++++++++++++++++++++++++ Global Queue and typedef for sensors +++++++++++++++++++++++++++++ */
+xQueueHandle sensor_queue;
+
 typedef struct messageparameters {
     char type[20];
     char measurementtype[10];
-    float value;
+    uint32_t value;
 }messageparameters;
 
 #endif

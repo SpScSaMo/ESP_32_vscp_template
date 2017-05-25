@@ -9,7 +9,6 @@
 #define LIGHT_OFF 1
 
 
-/* +++++++++++++++++++++++++++ global queue +++++++++++++++++++++++++++++ */
 xQueueHandle relay_queue;
 
 /*

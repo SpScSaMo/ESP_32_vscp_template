@@ -227,7 +227,8 @@ void i2c_read_task(void* arg)
 {
     int ret;
     uint32_t task_idx = (uint32_t) arg;
-    uint32_t luxwert;
+    uint32_t luxwertalt=0;
+    uint32_t luxwertneu=0;
     messageparameters mpara;
 
     while (1) {
@@ -241,13 +242,19 @@ void i2c_read_task(void* arg)
 //            printf("ch1:data_h: %02x\n", sensor_ch1_data_h);
 //            printf("ch1:data_l: %02x\n", sensor_ch1_data_l);
 //            printf("ch1:sensor val: %04x\n", (uint16_t)( sensor_ch1_data_h << 8 | sensor_ch1_data_l ));
-            vTaskDelay( 2000 / portTICK_RATE_MS);
-            luxwert=calculateLux((uint16_t)( sensor_ch0_data_h << 8 | sensor_ch0_data_l ),(uint16_t)( sensor_ch1_data_h << 8 | sensor_ch1_data_l ));
-            printf("lux: %d\n", luxwert);
-            strcpy(mpara.type,CH1);
-            strcpy(mpara.measurementtype,"lux");
-            mpara.value=(float)luxwert;
-        	xQueueSendToBack(lichtsensor_queue, &mpara, 0);
+            vTaskDelay( 10000 / portTICK_RATE_MS); //alle 10 Sekunden
+            luxwertneu=calculateLux((uint16_t)( sensor_ch0_data_h << 8 | sensor_ch0_data_l ),(uint16_t)( sensor_ch1_data_h << 8 | sensor_ch1_data_l ));
+            if (luxwertalt!=luxwertneu){
+
+            	printf("lux: %d\n", luxwertneu);
+            	            strcpy(mpara.type,CH1);
+            	            strcpy(mpara.measurementtype,"lux");
+            	            mpara.value=luxwertneu;
+            	        	xQueueSendToBack(sensor_queue, &mpara, 0);
+            	luxwertalt=luxwertneu;
+            }
+
+
         } else {
             printf("No ack, sensor not connected...skip...\n");
         }
@@ -263,8 +270,7 @@ void app_lichtsensor(void)
 	print_mux = xSemaphoreCreateMutex();
 
     i2c_master_init();
-    //create a queue to handle gpio event from isr
-    lichtsensor_queue = xQueueCreate(10, sizeof(messageparameters));
+
     xTaskCreate(i2c_read_task, "i2c_read_task", 1024 * 2, NULL, 10, NULL);
 }
 
