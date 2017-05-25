@@ -9,8 +9,8 @@
 #define CH2		 		"Lightbarrier"
 #define CH3		 		"Lightswitch"
 #define CH4		 		"Motorswitch"
-#define WIFIROUTER		"Bluemoon Sky"
-#define WIFIPASS		"Cgm8Schegar38!"
+#define WIFIROUTER		"???"           //ENTER ROUTER NAME
+#define WIFIPASS		"???"           //ENTER ROUTER PASSWORD
 //#define WIFIAUTH        WIFI_AUTH_WPA_PSK
 #define IPDEAMON		"10.0.0.14" //not used
 #define PORT_NUMBER 	9592	//not used
