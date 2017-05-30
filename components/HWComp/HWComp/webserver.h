@@ -26,7 +26,7 @@
 #include "esp_log.h"
 #include "tcpip_adapter.h"
 
-#include "lwip/API.h"
+#include "lwip/api.h"
 #include "esp_err.h"            //for error handling
 #include "esp_intr_alloc.h"     //is used for interrupts
 

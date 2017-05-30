@@ -28,6 +28,7 @@
 #define I2C_MASTER_SDA_IO    33    /*!< gpio number for I2C master data  */
 #define I2C_MASTER_NUM 		 I2C_NUM_1   /*!< I2C port number for master dev */
 #define I2C_MASTER_FREQ_HZ   100000     /*!< I2C master clock frequency */
+#define TIMEINTERVAL	 	30000 		//Time interval in ms between data fetch/end
 
 #define WRITE_BIT  I2C_MASTER_WRITE /*!< I2C master write */
 #define READ_BIT   I2C_MASTER_READ  /*!< I2C master read */

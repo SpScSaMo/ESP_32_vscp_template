@@ -100,8 +100,8 @@ void ligthbarrier_task(void* arg)
 						printf("Personen im Raum: %d\n",personen);
 
 						// Anzahl der Personen in die Queue stellen
-			            strcpy(mparalb.type,CH2);
-			            strcpy(mparalb.measurementtype,"per");
+			            strcpy(mparalb.channelId,CHANNEL2);
+			            strcpy(mparalb.commandType,COMMANDMEASSURETYPE_COUNT);
 			            mparalb.value=personen;
 			        	xQueueSendToBack(sensor_queue, &mparalb, 0);
 

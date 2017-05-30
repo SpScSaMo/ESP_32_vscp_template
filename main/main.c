@@ -83,46 +83,33 @@
 
 
 //******************************************************************
+// INCLUDES - FOR http sender
+//******************************************************************
+
+#include "httpgetsend.h"
+
+//******************************************************************
 // INCLUDES - FOR TCP Connection
 //******************************************************************
 //#include <stdio.h>
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include <math.h>
-#include <sys/time.h>
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_event_loop.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-#include "errno.h"
-#include "string.h"
+//#include "lwip/err.h"
+//#include "lwip/sockets.h"
+//#include "lwip/sys.h"
+//#include <math.h>
+//#include <sys/time.h>
+//#include "freertos/task.h"
+//#include "freertos/event_groups.h"
+//#include "esp_system.h"
+//#include "esp_wifi.h"
+//#include "esp_event_loop.h"
+//#include "esp_log.h"
+//#include "nvs_flash.h"
+//#include "errno.h"
+//#include "string.h"
 //#include "error.h"
 
 
 
-//******************************************************************
-// INCLUDES - FOR http Connection
-//******************************************************************
-
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_system.h"
-#include "esp_wifi.h"
-#include "esp_event_loop.h"
-#include "esp_log.h"
-#include "nvs_flash.h"
-
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include "lwip/netdb.h"
-#include "lwip/dns.h"
 
 
 /**************************************************/
@@ -135,7 +122,7 @@
 //#include "webserver.h"
 
 #include "cJSON.h"
-#include "lwip/API.h"
+#include "lwip/api.h"
 
 
 /**************************************************/
@@ -178,36 +165,6 @@ const static char http_index_hml[] = "<!DOCTYPE html>"
 
 
 
-
-//static const char *TAG = "CLIENTE";
-
-//#define DEBUG(...) ESP_LOGD(TAG,__VA_ARGS__);
-#define INFO(...) ESP_LOGI(TAG,__VA_ARGS__);
-#define ERROR(...) ESP_LOGE(TAG,__VA_ARGS__);
-
-#define delay_ms(ms) vTaskDelay((ms) / portTICK_RATE_MS)
-
-
-
-#define LEN_DATA 512
-
-volatile char mydata[LEN_DATA];
-
-//volatile char mydata[] = "TestData:12345";//datos de este dispositivo
-
-/* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
-
-/* The event group allows multiple bits for each event,
-   but we only care about one event - are we connected
-   to the AP with an IP? */
-const int STA_CONNECTED_BIT = BIT0;
-
-
-//+++++++++++++ for http requests ++++++++++++++++++++++++++++++++++++++
-static const char *TAG = "example";
-
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //******************************************************************
@@ -216,7 +173,6 @@ static const char *TAG = "example";
 
 
 void IRAM_ATTR btn0_isr_handler(void* arg);
-void init_button0(void);
 
 /* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
@@ -286,37 +242,6 @@ void IRAM_ATTR btn0_isr_handler(void* arg)
 
 }
 
-/**
- * builds a char array out of a string
- */
-void stringToSendChar(char text[]){
-
-	for(int i=0;i<LEN_DATA;i++){
-		mydata[i]=text[i];
-	}
-
-}
-
-/*
- * Button init
- *
- * initiatlizes the button of the ESP 32 on GPIO 0 with an interrupt
- *
- * \author Christian M.
- *
- */
-void init_button0(void){
-
-	gpio_set_pull_mode(GPIO_NUM_0,GPIO_PULLUP_ONLY);
-	gpio_set_intr_type(GPIO_NUM_0, GPIO_INTR_ANYEDGE);
-	gpio_set_direction(GPIO_NUM_0, GPIO_MODE_INPUT);
-
-    //install gpio isr service
-    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_NUM_0, btn0_isr_handler, (void*) GPIO_NUM_0);
-
-}
 
 /**
  * initializes the WIFI and the connection to the in config.h specified Access Point
@@ -325,7 +250,8 @@ void init_button0(void){
  */
 static void initialise_wifi(void){
 
-    tcpip_adapter_init();
+	STA_CONNECTED_BIT = BIT0;
+	tcpip_adapter_init();
     wifi_event_group = xEventGroupCreate();
     ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -353,15 +279,21 @@ static void http_server_netconn_serve(struct netconn *conn)
 {
     struct netbuf *inbuf;
     char *buf;
-    u16_t buflen;
+    uint16_t buflen=1000;
     err_t err;
+    char channelId[3]="3";  // this are just assigned testvalues and should go away
+    char commandType[3]="0"; // this are just assigned testvalues and should go away
+    char value[3]="0"; // this are just assigned testvalues and should go away
+    uint32_t status;
     
     /* Read the data from the port, blocking if nothing yet there.
      We assume the request (the part we care about) is in one netbuf */
     err = netconn_recv(conn, &inbuf);
     
+
     if (err == ERR_OK) {
-        netbuf_data(inbuf, (void**)&buf, &buflen);
+
+    	netbuf_data(inbuf, (void**)&buf, &buflen);
         
         // strncpy(_mBuffer, buf, buflen);
         
@@ -401,18 +333,66 @@ static void http_server_netconn_serve(struct netconn *conn)
     }
     /* Close the connection (server closes in HTTP) */
     netconn_close(conn);
+    ESP_LOGI(TAG, "... Webserver connection closed.");
     
     /* Delete the buffer (netconn_recv gives us ownership,
      so we have to make sure to deallocate the buffer) */
     netbuf_delete(inbuf);
+
+    /* pasring should be done here --> ToDo Gerhard */
+
+
+    /* logic for sending to control queue */
+
+    printf("Rückgabe von verlgeich (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
+    if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
+    	if (strcmp(value,OnOffType_Off)==0){
+    		status=LIGHT_OFF;
+    		xQueueSendToBack(relay_queue, &status, 0);
+    	}
+    	if (strcmp(value,OnOffType_On)==0){
+    		status=LIGHT_ON;
+    		xQueueSendToBack(relay_queue, &status, 0);
+    	}
+    }
+
+    if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
+    	if (strcmp(value,OnOffType_Off)==0){
+        	status=JALOUSIE_OFF;
+        	xQueueSendToBack(relay_queue, &status, 0);
+        }
+    }
+
+    if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_UpDownType)==0)){
+    	if (strcmp(value,UpDownType_Up)==0){
+      		status=JALOUSIE_UP;
+      		xQueueSendToBack(relay_queue, &status, 0);
+      	}
+      	if (strcmp(value,UpDownType_Down)==0){
+      		status=JALOUSIE_DOWN;
+      		xQueueSendToBack(relay_queue, &status, 0);
+      	}
+    }
+    /* end of logic for sending control messages to internal queue */
+
 }
+
+
+
+
+/**
+ * open http listening Server at specified port
+ *
+ *
+ */
+
 
 static void http_server(void *pvParameters)
 {
     struct netconn *conn, *newconn;
     err_t err;
     conn = netconn_new(NETCONN_TCP);
-    netconn_bind(conn, NULL, 80);
+    netconn_bind(conn, NULL, WEBSERVER_PORT);
     netconn_listen(conn);
     do {
         err = netconn_accept(conn, &newconn);
@@ -466,169 +446,132 @@ static void generate_json() {
 
 
 /**
- *	Socket öffnen und Daten senden
+ * Task for register and heartbeat
+ *
+ *
  */
-static void task_socket(void *someirrelevantdata){
-  struct timeval  tv1, tv2;
-  //uint32_t luxW;
-  char text[LEN_DATA];
-
-  while(1){
-    gettimeofday(&tv1, NULL);
-    xEventGroupWaitBits(
-              wifi_event_group,   /* The event group being tested. */
-              STA_CONNECTED_BIT, /* The bits within the event group to wait for. */
-              false,        /* BIT_0 & BIT_4 should be cleared before returning. */
-              true,       /* Don't wait for both bits, either bit will do. */
-              portMAX_DELAY );
-  	int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-  	   ERROR("SOCKET: %d ERRno:%d", sock, errno);
-    }else{
-    	struct sockaddr_in serverAddress;
-    	serverAddress.sin_family = AF_INET;
-    	inet_pton(AF_INET, IPDEAMON, &serverAddress.sin_addr.s_addr);
-    	serverAddress.sin_port = htons(PORT_NUMBER);
-
-    	int rs = connect(sock, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in));
-      if(rs<0){
-    	   ERROR("Verbindungsfehler: %d ERRno:%d", sock, errno);
-         close(sock);
-      }else{
-    	//xQueueReceive(lichtsensor_queue, &luxW, portMAX_DELAY);
-    	//printf("Luxreceived: %d\n",luxW);
-    	strcpy(text,"GET /api/Thing/set?thingId=coolman&thingType=1&measurementType=lux&value=400 HTTP/1.1\r\n");
-    	//char tmp[sizeof(uint32_t)];
-    	//sprintf(tmp,"%d", luxW);
-    	//strcat(text, tmp);
-    	strcat(text,"btdeamon20170517084951.azurewebsites.net");
-    	strcat(text,"text/html");
-    	stringToSendChar(text);
-    	rs = write(sock,(char*)mydata,LEN_DATA);
-        close(sock);
-        if(rs<0){
-      	   ERROR("Schreibfehler: %d ERRno:%d", sock, errno);
-        }else{
-          // si todo esto para esperar de forma chiva solo cuando todo sale bien:D
-          do{
-            delay_ms(5);
-            gettimeofday(&tv2,NULL);
-          }while(
-            ((tv2.tv_usec - tv1.tv_usec)/1000 +
-            (tv2.tv_sec - tv1.tv_sec)*1000)<1000
-          );
-        }
-      }
-    }
-  }
-}
-
-
-static void http_get_task(void *pvParameters)
+static void http_send_heartbeat(void *pvParameters)
 {
-    const struct addrinfo hints = {
-        .ai_family = AF_INET,
-        .ai_socktype = SOCK_STREAM,
-    };
-    struct addrinfo *res;
-    struct in_addr *addr;
-    int s, r;
-    char recv_buf[64];
-    messageparameters mpara;
-    char request[500];
 
-    while(1) {
+	char request[500];
 
-    	xQueueReceive(sensor_queue, &mpara, portMAX_DELAY);
+   while(1) {
 
-    	/* Wait for the callback to set the CONNECTED_BIT in the
-           event group.
-        */
-        xEventGroupWaitBits(wifi_event_group, STA_CONNECTED_BIT,
-                            false, true, portMAX_DELAY);
-        ESP_LOGI(TAG, "Connected to AP");
+   	//register all channels
+	   	   	strcpy(request, "GET /api/Thing/register?thingId=");
+	  	   	        strcat(request, THING_ID);
+	  	   	        strcat(request, "&channelId=");
+	  	   	        strcat(request, CHANNEL1);
+	  	   	        strcat(request, "&thingType=");
+	  	   	        strcat(request, "0");
+	  	   	        strcat(request, "&channelType=");
+	  	   	        strcat(request, CHANNELTYPE1);
+	  	   	        strcat(request, " HTTP/1.0\r\n");
+	 	   	        strcat(request, "Host: ");
+	 	   	        strcat(request, DEAMON_SERVER);
+	  	   	        strcat(request, "\r\n");
+	  	   	        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+	  	   	        strcat(request, "\r\n");
+	  	   	     xQueueSendToBack(send_queue, &request, 0);
+	  	   	     ESP_LOGI(TAG,"Registering Lightsensor at Deamon!");
+	  	   	     delay_ms(1000);
 
-        int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
+	  	   	 strcpy(request, "GET /api/Thing/register?thingId=");
+	  	   	        strcat(request, THING_ID);
+	  	   	        strcat(request, "&channelId=");
+	  	   	        strcat(request, CHANNEL2);
+	  	   	        strcat(request, "&thingType=");
+	  	   	        strcat(request, "0");
+	  	   	        strcat(request, "&channelType=");
+	  	   	        strcat(request, CHANNELTYPE2);
+	  	   	        strcat(request, " HTTP/1.0\r\n");
+	 	   	        strcat(request, "Host: ");
+	 	   	        strcat(request, DEAMON_SERVER);
+	  	   	        strcat(request, "\r\n");
+	  	   	        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+	  	   	        strcat(request, "\r\n");
+	  	   	     xQueueSendToBack(send_queue, &request, 0);
+	  	   	     ESP_LOGI(TAG,"Registering Lightbarrier at Deamon!");
+	  	   	     delay_ms(1000);
 
-        if(err != 0 || res == NULL) {
-            ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            continue;
-        }
+	  	   	 strcpy(request, "GET /api/Thing/register?thingId=");
+	   	        strcat(request, THING_ID);
+	   	        strcat(request, "&channelId=");
+	   	        strcat(request, CHANNEL3);
+	   	        strcat(request, "&thingType=");
+	   	        strcat(request, "0");
+	   	        strcat(request, "&channelType=");
+	   	        strcat(request, CHANNELTYPE3);
+	   	        strcat(request, " HTTP/1.0\r\n");
+	   	        strcat(request, "Host: ");
+	   	        strcat(request, DEAMON_SERVER);
+	   	        strcat(request, "\r\n");
+	   	        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+	   	        strcat(request, "\r\n");
+	   	     xQueueSendToBack(send_queue, &request, 0);
+	   	     ESP_LOGI(TAG,"Registering Switch at Deamon!");
+	   	     delay_ms(1000);
 
-        /* Code to print the resolved IP.
-           Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
-        addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
+	   	     strcpy(request, "GET /api/Thing/register?thingId=");
+  	   	        strcat(request, THING_ID);
+  	   	        strcat(request, "&channelId=");
+  	   	        strcat(request, CHANNEL4);
+  	   	        strcat(request, "&thingType=");
+  	   	        strcat(request, "0");
+  	   	        strcat(request, "&channelType=");
+  	   	        strcat(request, CHANNELTYPE4);
+  	   	        strcat(request, " HTTP/1.0\r\n");
+ 	   	        strcat(request, "Host: ");
+ 	   	        strcat(request, DEAMON_SERVER);
+  	   	        strcat(request, "\r\n");
+  	   	        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+  	   	        strcat(request, "\r\n");
+  	   	     xQueueSendToBack(send_queue, &request, 0);
+  	   	     ESP_LOGI(TAG,"Registering Rollershutter at Deamon!");
 
-        s = socket(res->ai_family, res->ai_socktype, 0);
-        if(s < 0) {
-            ESP_LOGE(TAG, "... Failed to allocate socket.");
-            freeaddrinfo(res);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            continue;
-        }
-        ESP_LOGI(TAG, "... allocated socket\r\n");
 
-        if(connect(s, res->ai_addr, res->ai_addrlen) != 0) {
-            ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
-            close(s);
-            freeaddrinfo(res);
-            vTaskDelay(4000 / portTICK_PERIOD_MS);
-            continue;
-        }
 
-        ESP_LOGI(TAG, "... connected");
-        freeaddrinfo(res);
-//        strcpy(mpara.type,"Lightsensor");
-//        strcpy(mpara.measurementtype,"lux");
-//        mpara.value=456.23;
-//
-        strcpy(request, "GET /api/Thing/set?thingId=");
-        strcat(request, THING_ID);
-        strcat(request, "&thingType=");
-        strcat(request, mpara.type);
-        strcat(request, "&measurementType=");
-        strcat(request, mpara.measurementtype);
-        strcat(request, "&value=");
-        char tmp[sizeof(uint32_t)];
-        sprintf(tmp,"%d", mpara.value);
-        strcat(request, tmp);
-        strcat(request, " HTTP/1.0\r\n");
-        strcat(request, "Host: ");
-        strcat(request, WEB_SERVER);
-        strcat(request, "\r\n");
-        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
-        strcat(request, "\r\n");
-
-        if (write(s, request, strlen(request)) < 0) {
-            ESP_LOGE(TAG, "... socket send failed");
-            close(s);
-            vTaskDelay(4000 / portTICK_PERIOD_MS);
-            continue;
-        }
-        ESP_LOGI(TAG, "... socket send success");
-
-        /* Read HTTP response */
-        do {
-            bzero(recv_buf, sizeof(recv_buf));
-            r = read(s, recv_buf, sizeof(recv_buf)-1);
-            for(int i = 0; i < r; i++) {
-                putchar(recv_buf[i]);
-            }
-        } while(r > 0);
-
-        ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d\r\n", r, errno);
-        close(s);
-//        for(int countdown = 10; countdown >= 0; countdown--) {
-//            ESP_LOGI(TAG, "%d... ", countdown);
-//            vTaskDelay(1000 / portTICK_PERIOD_MS);
-//        }
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "Starting again!");
-    }
+  	  delay_ms(60000);  // send heartbeat every 60 seconds!
+   }
 }
 
+/**
+ * Task for translating queues and sending messages
+ *
+ *
+ */
+static void http_send_queue_translator(void *pvParameters)
+{
+
+	messageparameters mpara;
+	char request[500];
+
+   while(1) {
+
+
+	xQueueReceive(sensor_queue, &mpara, portMAX_DELAY);
+   	strcpy(request, "GET /api/Thing/set?thingId=");
+   	        strcat(request, THING_ID);
+   	        strcat(request, "&channelId=");
+   	        strcat(request, mpara.channelId);
+   	        strcat(request, "&commandType=");
+   	        strcat(request, mpara.commandType);
+   	        strcat(request, "&value=");
+   	        char tmp[sizeof(uint32_t)];
+   	        sprintf(tmp,"%d", mpara.value);
+   	        strcat(request, tmp);
+   	        strcat(request, " HTTP/1.0\r\n");
+   	        strcat(request, "Host: ");
+   	        strcat(request, DEAMON_SERVER);
+   	        strcat(request, "\r\n");
+   	        strcat(request, "User-Agent: esp-idf/1.0 esp32\r\n");
+   	        strcat(request, "\r\n");
+
+   	     ESP_LOGI(TAG,"Sending value to send_queue: %s",request);
+   	     xQueueSendToBack(send_queue, &request, 0);
+
+   }
+}
 
 /* app_main()
  *
@@ -637,7 +580,7 @@ static void http_get_task(void *pvParameters)
  */
 void app_main(void)
 {
-	uint32_t UpOrDownMain;
+	//uint32_t UpOrDownMain;
 	nvs_flash_init(); //Initialize NVS flash storage with layout given in the partition table
 
 
@@ -653,14 +596,13 @@ void app_main(void)
 
 	// Start WIFI connection
 	initialise_wifi();
-    //xTaskCreate(&task_socket, "socket", 2048  , NULL, 5, NULL);
-    xTaskCreate(&http_server, "http_server", 4096, NULL, 5, NULL);
-    xTaskCreate(&http_get_task, "http_get_task", 4096, NULL, 5, NULL);
-    //
+	app_httpgetsend(); // starts the http-get sending task
+	xTaskCreate(&http_send_heartbeat, "http_send_heartbeat", 4096, NULL, 5, NULL);
+	xTaskCreate(&http_send_queue_translator, "http_send_queue_translator", 4096, NULL, 5, NULL);
+    xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
     
     //--VSCP------------------------//
     init_vscp_millisecond_timer();
-    //init_button0(); // initializes Button and interrupt
 
     
 
@@ -669,24 +611,10 @@ void app_main(void)
     while (true) {
     		gpio_set_level(GPIO_NUM_5, level);
     	        level = !level;
-//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
-//    	        UpOrDownMain=JALOUSIE_UP;
-//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
-//    	        ESP_LOGI(TAG, "UP sent!");
-//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
-//    	        UpOrDownMain=JALOUSIE_OFF;
-//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
-//    	        ESP_LOGI(TAG, "OFF sent!");
-//    	        vTaskDelay(1000 / portTICK_PERIOD_MS);
-//    	        UpOrDownMain=JALOUSIE_DOWN;
-//    	        ESP_LOGI(TAG, "DOWN sent!");
-//    	        xQueueSendToBack(jalousie_queue, &UpOrDownMain, 0);
-//    	        vTaskDelay(10000 / portTICK_PERIOD_MS);
-// this was just implemented for the test of the jalousie_queue);
+
 
     	        vTaskDelay(300 / portTICK_PERIOD_MS);
 
- //       printf("Value of vscp_initbtncnt: %d\n", vscp_initbtncnt);
     }
 }
 
