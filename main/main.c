@@ -286,6 +286,10 @@ static void http_server_netconn_serve(struct netconn *conn)
     char value[3]="0"; // this are just assigned testvalues and should go away
     uint32_t status;
     
+    //values for parsing
+    uint32_t http_char_pointer = 0; // we use that pointer to interate over the char buffer which was filled up with the http request
+    uint32_t help_value=0;
+    
     /* Read the data from the port, blocking if nothing yet there.
      We assume the request (the part we care about) is in one netbuf */
     err = netconn_recv(conn, &inbuf);
@@ -297,6 +301,121 @@ static void http_server_netconn_serve(struct netconn *conn)
         
         // strncpy(_mBuffer, buf, buflen);
         
+        
+        /*Here the HTTP PARSING FOR OUR DEFINED VALUES START*/
+        // VALUES ARE:
+        //    char channelId[3]
+        //    char commandType[3]
+        //    char value[3]
+        //********************************
+        if (buflen> 12 &&
+        buf[0]=='G' &&
+        buf[1]=='E' &&
+        buf[2]=='T' &&
+        buf[3]==' ' &&
+        buf[4]=='/' &&
+        buf[5]=='c' && 
+        buf[6]=='o' &&
+        buf[7]=='m' &&
+        buf[8]=='m' &&
+        buf[9]=='a' &&
+        buf[10]=='n' &&
+        buf[11]=='d' &&
+        buf[12]=='?' ) {
+        
+        
+        
+        
+        //iterate over the buffer
+        for(http_char_pointer=13; http_char_pointer <= buflen; http_char_pointer++) {
+            
+            //EINLESEN channelId=
+            if( buf[http_char_pointer]=='c' &&
+                buf[http_char_pointer+1]=='h' &&
+                buf[http_char_pointer+2]=='a' &&
+                buf[http_char_pointer+3]=='n' &&
+                buf[http_char_pointer+4]=='n' &&
+                buf[http_char_pointer+5]=='e' &&
+                buf[http_char_pointer+6]=='l' &&
+                buf[http_char_pointer+7]=='I' &&
+                buf[http_char_pointer+8]=='d' &&
+                buf[http_char_pointer+9]=='=' ) {
+               
+               http_char_pointer =  http_char_pointer + 10; // Add the length of the "channelId=" + 1 to the http_char_pointer
+                
+               //Write the String to Value   /channelId has alwas 1 char
+               strcpy(channelId, buf[http_char_pointer]);
+               
+            }
+            
+            //EINLESEN commandType=
+            if( buf[http_char_pointer]=='c' &&
+                buf[http_char_pointer+1]=='o' &&
+                buf[http_char_pointer+2]=='m' &&
+                buf[http_char_pointer+3]=='m' &&
+                buf[http_char_pointer+4]=='a' &&
+                buf[http_char_pointer+5]=='n' &&
+                buf[http_char_pointer+6]=='d' &&
+                buf[http_char_pointer+7]=='T' &&
+                buf[http_char_pointer+8]=='y' &&
+                buf[http_char_pointer+9]=='p' &&
+                buf[http_char_pointer+10]=='e' &&
+                buf[http_char_pointer+11]=='=') {
+               
+               http_char_pointer =  http_char_pointer + 12; // Add the length of the "commandType=" + 1 to the http_char_pointer
+                
+               //Write the String to Value   /channelId has alwas 1 char
+               strcpy(commandType, buf[http_char_pointer]);
+               
+            }
+
+
+
+            //EINLESEN value=
+            if( buf[http_char_pointer]=='v' &&
+                buf[http_char_pointer+1]=='a' &&
+                buf[http_char_pointer+2]=='l' &&
+                buf[http_char_pointer+3]=='u' &&
+                buf[http_char_pointer+4]=='e' &&
+                buf[http_char_pointer+5]=='=') {
+               
+               http_char_pointer =  http_char_pointer + 6; // Add the length of the "value=" + 1 to the http_char_pointer
+                
+               //Write the String to Value   /channelId has alwas 1 char
+               strcpy(value, buf[http_char_pointer]);
+               
+                
+               while (1) {
+                    http_char_pointer++;
+                
+                    if (buf[http_char_pointer]!='&') {
+                        strcat(value, buf[http_char_pointer]); 
+                    }
+                    else {
+                        //After finaly reading the value, the Parsing should be over
+                        http_char_pointer = buflen;
+                        break; // Pointer auf ein & Zeigt, dann wurde die Variable Fertig eingelesen -> Schleife verlassen
+                    }
+               }    
+                
+            
+            
+            }
+
+        } //iterate for loop
+        
+        
+        
+        
+        //Write out the http header -> thats the response of the incoming http request
+        netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
+        
+
+        
+        } // END OF HTTP PARSING
+        
+        
+        
         /* Is this an HTTP GET command? (only check the first 5 chars, since
          there are other formats for GET, and we're keeping it very simple )*/
         printf("buffer = %s \n", buf);
@@ -305,7 +424,8 @@ static void http_server_netconn_serve(struct netconn *conn)
             buf[1]=='E' &&
             buf[2]=='T' &&
             buf[3]==' ' &&
-            buf[4]=='/' ) {
+            buf[4]=='/' &&
+            buf[4]!='c' ) {
             printf("buf[5] = %c\n", buf[5]);
             /* Send the HTML header
              * subtract 1 from the size, since we dont send the \0 in the string
