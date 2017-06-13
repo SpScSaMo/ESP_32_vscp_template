@@ -88,44 +88,14 @@
 
 #include "httpgetsend.h"
 
-//******************************************************************
-// INCLUDES - FOR TCP Connection
-//******************************************************************
-//#include <stdio.h>
-//#include "lwip/err.h"
-//#include "lwip/sockets.h"
-//#include "lwip/sys.h"
-//#include <math.h>
-//#include <sys/time.h>
-//#include "freertos/task.h"
-//#include "freertos/event_groups.h"
-//#include "esp_system.h"
-//#include "esp_wifi.h"
-//#include "esp_event_loop.h"
-//#include "esp_log.h"
-//#include "nvs_flash.h"
-//#include "errno.h"
-//#include "string.h"
-//#include "error.h"
-
-
-
-
-
-/**************************************************/
-
 
 //******************************************************************
 // INCLUDES - FOR webserver
 //******************************************************************
 
 //#include "webserver.h"
-
-#include "cJSON.h"
+//#include "cJSON.h"
 #include "lwip/api.h"
-
-
-/**************************************************/
 
 
 //******************************************************************
@@ -165,20 +135,16 @@ const static char http_index_hml[] = "<!DOCTYPE html>"
 
 
 
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //******************************************************************
 // Prototypes - ESP32 - THING - Overview ;-)
 //******************************************************************
 
 
-void IRAM_ATTR btn0_isr_handler(void* arg);
+//void IRAM_ATTR btn0_isr_handler(void* arg); -- obsolete without VSCP
 
 /* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
-
-
-
 
 
 /**
@@ -205,42 +171,44 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
     return ESP_OK;
 }
 
-/* Button 0 ISR
- *
- * This is the ISR for Button 0 on falling edge
- *
- * \author: Christian Mödlhammer
- */
-void IRAM_ATTR btn0_isr_handler(void* arg)
-{
-	uint32_t sec, us;
-	uint64_t ts,ts_init,ts_next;
+// The following is Obsolete without VSCP!
 
-	// Null für den Ausgangswert
-	vscp_initbtncnt=0;
-
-	if (gpio_get_level(GPIO_NUM_0)==0){
-
-		gettimeofday(&tv, NULL);
-			(sec) = tv.tv_sec;
-			(us) = tv.tv_usec;
-			(ts) = (uint64_t)(sec*1000000+us);
-			ts_init=ts;
-			ts_next=ts;
-			while ((ts_next-ts_init)<250000){ // wait for 250 milliseconds
-				gettimeofday(&tv, NULL);
-				(sec) = tv.tv_sec;
-				(us) = tv.tv_usec;
-				(ts) = (uint64_t)(sec*1000000+us);
-				ts_next=ts;
-			}
-
-			//if button pressed for more than 250 milliseconds
-			if (gpio_get_level(GPIO_NUM_0)==0) vscp_initbtncnt=251;
-
-	}
-
-}
+///* Button 0 ISR
+// *
+// * This is the ISR for Button 0 on falling edge
+// *
+// * \author: Christian Mödlhammer
+// */
+//void IRAM_ATTR btn0_isr_handler(void* arg)
+//{
+//	uint32_t sec, us;
+//	uint64_t ts,ts_init,ts_next;
+//
+//	// Null für den Ausgangswert
+//	vscp_initbtncnt=0;
+//
+//	if (gpio_get_level(GPIO_NUM_0)==0){
+//
+//		gettimeofday(&tv, NULL);
+//			(sec) = tv.tv_sec;
+//			(us) = tv.tv_usec;
+//			(ts) = (uint64_t)(sec*1000000+us);
+//			ts_init=ts;
+//			ts_next=ts;
+//			while ((ts_next-ts_init)<250000){ // wait for 250 milliseconds
+//				gettimeofday(&tv, NULL);
+//				(sec) = tv.tv_sec;
+//				(us) = tv.tv_usec;
+//				(ts) = (uint64_t)(sec*1000000+us);
+//				ts_next=ts;
+//			}
+//
+//			//if button pressed for more than 250 milliseconds
+//			if (gpio_get_level(GPIO_NUM_0)==0) vscp_initbtncnt=251;
+//
+//	}
+//
+//}
 
 
 /**
@@ -327,7 +295,7 @@ static void http_server_netconn_serve(struct netconn *conn)
         
         
         //iterate over the buffer
-        for(http_char_pointer=13; http_char_pointer <= buflen; http_char_pointer++) {
+        for(http_char_pointer=13; http_char_pointer < buflen; http_char_pointer++) {
             
             //EINLESEN channelId=
             if( buf[http_char_pointer]=='c' &&
@@ -464,7 +432,7 @@ static void http_server_netconn_serve(struct netconn *conn)
 
     /* logic for sending to control queue */
 
-    printf("Rückgabe von verlgeich (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
+    printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
     if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
     	if (strcmp(value,OnOffType_Off)==0){
     		status=LIGHT_OFF;
@@ -479,21 +447,51 @@ static void http_server_netconn_serve(struct netconn *conn)
     if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
     	if (strcmp(value,OnOffType_Off)==0){
         	status=JALOUSIE_OFF;
-        	xQueueSendToBack(relay_queue, &status, 0);
+        	xQueueSendToBack(jalousie_queue, &status, 0);
         }
     }
 
     if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_UpDownType)==0)){
     	if (strcmp(value,UpDownType_Up)==0){
       		status=JALOUSIE_UP;
-      		xQueueSendToBack(relay_queue, &status, 0);
+      		xQueueSendToBack(jalousie_queue, &status, 0);
       	}
       	if (strcmp(value,UpDownType_Down)==0){
       		status=JALOUSIE_DOWN;
-      		xQueueSendToBack(relay_queue, &status, 0);
+      		xQueueSendToBack(jalousie_queue, &status, 0);
       	}
     }
     /* end of logic for sending control messages to internal queue */
+
+}
+
+/*
+ * This is just for testing the actors as long as the parsing is not working
+ *
+ */
+static void actor_test(void *pvParameters) {
+
+	uint32_t status;
+
+
+	while(1){
+					status=LIGHT_ON;
+		    		xQueueSendToBack(relay_queue, &status, 0);
+		    		delay_ms(1000);
+		    		status=LIGHT_OFF;
+		    		xQueueSendToBack(relay_queue, &status, 0);
+		    		delay_ms(1000);
+		    		status=JALOUSIE_UP;
+		          	xQueueSendToBack(jalousie_queue, &status, 0);
+		          	delay_ms(1000);
+		        	status=JALOUSIE_OFF;
+		            xQueueSendToBack(jalousie_queue, &status, 0);
+		            delay_ms(1000);
+		      		status=JALOUSIE_DOWN;
+		      		xQueueSendToBack(jalousie_queue, &status, 0);
+		            delay_ms(10000);
+
+	}
 
 }
 
@@ -525,44 +523,6 @@ static void http_server(void *pvParameters)
     netconn_delete(conn);
 }
 
-
-static void generate_json() {
-    cJSON *root, *info, *d;
-    root = cJSON_CreateObject();
-    
-    cJSON_AddItemToObject(root, "d", d = cJSON_CreateObject());
-    cJSON_AddItemToObject(root, "info", info = cJSON_CreateObject());
-    
-    cJSON_AddStringToObject(d, "myName", "CMMC-ESP32-NANO");
-    cJSON_AddNumberToObject(d, "temperature", 30.100);
-    cJSON_AddNumberToObject(d, "humidity", 70.123);
-    
-    cJSON_AddStringToObject(info, "ssid", "dummy");
-    //cJSON_AddNumberToObject(info, "heap", system_get_free_heap_size());
-    //cJSON_AddStringToObject(info, "sdk", system_get_sdk_version());
-    //cJSON_AddNumberToObject(info, "time", system_get_time());
-    
-    while (1) {
-        //cJSON_ReplaceItemInObject(info, "heap",
-        //													cJSON_CreateNumber(system_get_free_heap_size()));
-        //cJSON_ReplaceItemInObject(info, "time",
-        //													cJSON_CreateNumber(system_get_time()));
-        //cJSON_ReplaceItemInObject(info, "sdk",
-        //													cJSON_CreateString(system_get_sdk_version()));
-        
-        json_unformatted = cJSON_PrintUnformatted(root);
-        printf("[len = %d]  ", strlen(json_unformatted));
-        
-        for (int var = 0; var < strlen(json_unformatted); ++var) {
-            putc(json_unformatted[var], stdout);
-        }
-        
-        printf("\n");
-        fflush(stdout);
-        delay_ms(2000);
-        free(json_unformatted);
-    }
-}
 
 
 /**
@@ -705,24 +665,25 @@ void app_main(void)
 
 
 	//create a sensor queue for sending values
-	    sensor_queue = xQueueCreate(10, sizeof(messageparameters));
+	sensor_queue = xQueueCreate(10, sizeof(messageparameters));
 	// Start HW Components and millisecond timer
-	app_lichtsensor(); // starting light sensor
 	app_timer(); // starting the timer with the queues 1 ms and 50 ms
-	app_lichtschranke(); // starting the light barrier logic
+	app_lichtsensor(); // starting light sensor
 	app_lichtrelay(); // starting the light relay logic
 	app_jalousie(); // starting the jalousie task
+	app_lichtschranke(); // starting the light barrier logic
 
 
-	// Start WIFI connection
+	//Start WIFI connection
 	initialise_wifi();
 	app_httpgetsend(); // starts the http-get sending task
 	xTaskCreate(&http_send_heartbeat, "http_send_heartbeat", 4096, NULL, 5, NULL);
 	xTaskCreate(&http_send_queue_translator, "http_send_queue_translator", 4096, NULL, 5, NULL);
-    xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
-    
+    //xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
+	xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
+
     //--VSCP------------------------//
-    init_vscp_millisecond_timer();
+    //init_vscp_millisecond_timer();
 
     
 

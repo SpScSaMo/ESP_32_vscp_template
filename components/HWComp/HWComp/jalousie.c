@@ -54,7 +54,7 @@ void jalousie_task(void* arg)
 
 		}
 
-	xQueueReceive(ms_50_queue, &some_irrelevant_value, portMAX_DELAY);
+	xQueueReceive(ms_50_queue2, &some_irrelevant_value, portMAX_DELAY);
 	timecount+=50; // 50 ms werden zu timecount addiert
 	if (UpOrDown==JALOUSIE_OFF) timecount=TIMEOUT; // damit wird ausgeschaltet
 	if (timecount>=TIMEOUT) {  // nach definierter Zeit in ms wird abgeschaltet
@@ -89,7 +89,7 @@ void app_jalousie()
     //disable pull-down mode
     io_conf.pull_down_en = 0;
     //disable pull-up mode
-    io_conf.pull_up_en = 1;
+    io_conf.pull_up_en = 0;
     //configure GPIO with the given settings
     gpio_config(&io_conf);
 
@@ -97,7 +97,7 @@ void app_jalousie()
     //create a queue to handle gpio event from isr
     jalousie_queue = xQueueCreate(10, sizeof(uint32_t));
     //start gpio task
-    xTaskCreate(jalousie_task, "jalousie_task", 2048, NULL, 9, NULL);
+    xTaskCreate(jalousie_task, "jalousie_task", 2048, NULL, 10, NULL);
 
 }
 

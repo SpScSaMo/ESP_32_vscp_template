@@ -43,7 +43,7 @@ void lichtrelay_task(void* arg)
 	while (1) {
 		(xQueueReceive(relay_queue, &OnOrOff, portMAX_DELAY));
 
-		printf("Info: Lichtschalter: %d",OnOrOff);
+		printf("Lichtrelais received value: %d\n",OnOrOff);
 
 		if ((OnOrOff==LIGHT_OFF)&&(status==LIGHT_ON)) {
 			gpio_set_level(GPIO_OUTPUT, LIGHT_OFF);

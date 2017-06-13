@@ -106,9 +106,9 @@ void ligthbarrier_task(void* arg)
 			        	xQueueSendToBack(sensor_queue, &mparalb, 0);
 
 						// für das Relay an die Queue senden!
-						if (personen>1) relaystatus=LIGHT_ON;
-						if (personen<1) relaystatus=LIGHT_OFF;
-						xQueueSendToBack(relay_queue, &relaystatus, 0);
+						//if (personen>1) relaystatus=LIGHT_ON;
+						//if (personen<1) relaystatus=LIGHT_OFF;
+						//xQueueSendToBack(relay_queue, &relaystatus, 0);
 					}
 
 				}
@@ -156,7 +156,7 @@ void app_lichtschranke(void)
 	//    • xTaskHandle – Reference to the newly created task instance. This may be
 	//    passed in as NULL if no task handle is required to be returned.
 
-    xTaskCreate(ligthbarrier_task, "ligthbarrier_task", 2048, NULL, 9, NULL);
+    xTaskCreate(ligthbarrier_task, "ligthbarrier_task", 2048, NULL, 8, NULL);
 
 }
 

@@ -91,11 +91,11 @@ void http_get_task(void *pvParameters)
             bzero(recv_buf, sizeof(recv_buf));
             r = read(s, recv_buf, sizeof(recv_buf)-1);
             for(int i = 0; i < r; i++) {
-                putchar(recv_buf[i]);
+                //putchar(recv_buf[i]);
             }
         } while(r > 0);
 
-        printf("Response: %s",recv_buf);
+        //printf("Response: %s",recv_buf);
         ESP_LOGI(TAG, "... done reading from socket. Last read return=%d errno=%d\r\n", r, errno);
         close(s);
         vTaskDelay(1000 / portTICK_PERIOD_MS);

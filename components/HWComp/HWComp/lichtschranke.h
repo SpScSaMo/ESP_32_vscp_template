@@ -24,6 +24,7 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 #define DEBUG 0
 
+// ACHTUNG: unbedingt die Masse der Lichtschranke auch mit dem ESP32 verbinden, sonst gibt es Funktionsprobleme!
 
 
 /* +++++++++++++++++++++++++++ message queue +++++++++++++++++++++++++++++ */

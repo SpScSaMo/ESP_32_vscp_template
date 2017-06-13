@@ -133,7 +133,7 @@ void app_timer()
 
     tg0_timer1_init();
 
-    xTaskCreate(timer_evt_task, "timer_evt_task", 2048, NULL, 5, NULL);
+    xTaskCreate(timer_evt_task, "timer_evt_task", 2048, NULL, 7, NULL);
 
         
 //    while(1){
