@@ -249,9 +249,9 @@ static void http_server_netconn_serve(struct netconn *conn)
     char *buf;
     uint16_t buflen=1000;
     err_t err;
-    char channelId[3]="3";  // this are just assigned testvalues and should go away
-    char commandType[3]="0"; // this are just assigned testvalues and should go away
-    char value[3]="0"; // this are just assigned testvalues and should go away
+    char channelId[3];  // this are just assigned testvalues and should go away
+    char commandType[3]; // this are just assigned testvalues and should go away
+    char value[3]; // this are just assigned testvalues and should go away
     uint32_t status;
     
     //values for parsing
@@ -292,11 +292,12 @@ static void http_server_netconn_serve(struct netconn *conn)
         buf[12]=='?' ) {
         
         
-        
+        	for(int i = 0; i < buflen; i++) {
+        	  putchar(buf[i]);}
         
         //iterate over the buffer
-        for(http_char_pointer=13; http_char_pointer < buflen; http_char_pointer++) {
-            
+        //for(http_char_pointer=13; http_char_pointer < (buflen-50); http_char_pointer++) {
+
             //EINLESEN channelId=
             if( buf[http_char_pointer]=='c' &&
                 buf[http_char_pointer+1]=='h' &&
@@ -311,64 +312,74 @@ static void http_server_netconn_serve(struct netconn *conn)
                
                http_char_pointer =  http_char_pointer + 10; // Add the length of the "channelId=" + 1 to the http_char_pointer
                 
-               //Write the String to Value   /channelId has alwas 1 char
-               strcpy(channelId, buf[http_char_pointer]);
-               
+               //Write the String to Value   /channelId has always 1 char
+               strcpy(&channelId,'"');
+               memcpy(channelId[1],buf[http_char_pointer],1);
+               strcat(&channelId,'"');
+               http_char_pointer++;
             }
             
             //EINLESEN commandType=
-            if( buf[http_char_pointer]=='c' &&
-                buf[http_char_pointer+1]=='o' &&
-                buf[http_char_pointer+2]=='m' &&
+            if( buf[http_char_pointer]=='&' &&
+                buf[http_char_pointer+1]=='c' &&
+                buf[http_char_pointer+2]=='o' &&
                 buf[http_char_pointer+3]=='m' &&
-                buf[http_char_pointer+4]=='a' &&
-                buf[http_char_pointer+5]=='n' &&
-                buf[http_char_pointer+6]=='d' &&
-                buf[http_char_pointer+7]=='T' &&
-                buf[http_char_pointer+8]=='y' &&
-                buf[http_char_pointer+9]=='p' &&
-                buf[http_char_pointer+10]=='e' &&
-                buf[http_char_pointer+11]=='=') {
+                buf[http_char_pointer+4]=='m' &&
+                buf[http_char_pointer+5]=='a' &&
+                buf[http_char_pointer+6]=='n' &&
+                buf[http_char_pointer+7]=='d' &&
+                buf[http_char_pointer+8]=='T' &&
+                buf[http_char_pointer+9]=='y' &&
+                buf[http_char_pointer+10]=='p' &&
+                buf[http_char_pointer+11]=='e'&&
+                buf[http_char_pointer+12]=='=') {
                
-               http_char_pointer =  http_char_pointer + 12; // Add the length of the "commandType=" + 1 to the http_char_pointer
+               http_char_pointer =  http_char_pointer + 13; // Add the length of the "commandType=" + 1 to the http_char_pointer
                 
                //Write the String to Value   /channelId has alwas 1 char
-               strcpy(commandType, buf[http_char_pointer]);
-               
+               strcpy(commandType[0], '"');
+               strcpy(commandType[1], buf[http_char_pointer]);
+               strcpy(commandType[2], '"');
+               http_char_pointer++;
             }
-
-
 
             //EINLESEN value=
-            if( buf[http_char_pointer]=='v' &&
-                buf[http_char_pointer+1]=='a' &&
-                buf[http_char_pointer+2]=='l' &&
-                buf[http_char_pointer+3]=='u' &&
-                buf[http_char_pointer+4]=='e' &&
-                buf[http_char_pointer+5]=='=') {
+            if( buf[http_char_pointer]=='&' &&
+                buf[http_char_pointer+1]=='v' &&
+                buf[http_char_pointer+2]=='a' &&
+                buf[http_char_pointer+3]=='l' &&
+                buf[http_char_pointer+4]=='u' &&
+                buf[http_char_pointer+5]=='e' &&
+                buf[http_char_pointer+6]=='=') {
                
-               http_char_pointer =  http_char_pointer + 6; // Add the length of the "value=" + 1 to the http_char_pointer
+               http_char_pointer =  http_char_pointer + 7; // Add the length of the "value=" + 1 to the http_char_pointer
                 
                //Write the String to Value   /channelId has alwas 1 char
-               strcpy(value, buf[http_char_pointer]);
-               
-                
-               while (1) {
-                    http_char_pointer++;
-                
-                    if (buf[http_char_pointer]!='&') {
-                        strcat(value, buf[http_char_pointer]); 
-                    }
-                    else {
-                        //After finaly reading the value, the Parsing should be over
-                        http_char_pointer = buflen;
-                        break; // Pointer auf ein & Zeigt, dann wurde die Variable Fertig eingelesen -> Schleife verlassen
-                    }
-               }    
+               strcpy(value[0], '"');
+               strcpy(value[1], buf[http_char_pointer]);
+               strcpy(value[2], '"');
+
+               netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
+               netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
+
+               //     break;
+//
+//               while (1) {
+//                    http_char_pointer++;
+//
+//                    if (buf[http_char_pointer]!='&') {
+//                        strcat(value, buf[http_char_pointer]);
+//                    }
+//                    else {
+//                        //After finaly reading the value, the Parsing should be over
+//                        http_char_pointer = buflen;
+//                        break; // Pointer auf ein & Zeigt, dann wurde die Variable Fertig eingelesen -> Schleife verlassen
+//                    }
+//               }
                 
             
             
-            }
+           // }
 
         } //iterate for loop
         
@@ -376,7 +387,6 @@ static void http_server_netconn_serve(struct netconn *conn)
         
         
         //Write out the http header -> thats the response of the incoming http request
-        netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
         
 
         
@@ -401,21 +411,8 @@ static void http_server_netconn_serve(struct netconn *conn)
              */
             
             netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
-            
-            if(buf[5]=='h') {
-                /* Send our HTML page */
-                netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
-            }
-            else if(buf[5]=='l') {
-                /* Send our HTML page */
-                netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
-            }
-            else if(buf[5]=='j') {
-                netconn_write(conn, json_unformatted, strlen(json_unformatted), NETCONN_NOCOPY);
-            }
-            else {
-                netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
-            }
+            netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
+
         }
         
     }
@@ -432,7 +429,8 @@ static void http_server_netconn_serve(struct netconn *conn)
 
     /* logic for sending to control queue */
 
-    printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
+    //printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
+    printf("Ergebnis von Parsing:\nchannelId=%s\ncommandType=%s\nvalue=%s\n",channelId,commandType,value);
     if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
     	if (strcmp(value,OnOffType_Off)==0){
     		status=LIGHT_OFF;
@@ -679,7 +677,7 @@ void app_main(void)
 	app_httpgetsend(); // starts the http-get sending task
 	xTaskCreate(&http_send_heartbeat, "http_send_heartbeat", 4096, NULL, 5, NULL);
 	xTaskCreate(&http_send_queue_translator, "http_send_queue_translator", 4096, NULL, 5, NULL);
-    //xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
+    xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
 	xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
 
     //--VSCP------------------------//
