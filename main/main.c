@@ -147,9 +147,6 @@ const static char http_index_hml_command[] = "<!DOCTYPE html>"
 "</body>\n"
 "</html>\n";
 
-
-
-
 //************ WEB CONTEND FOR WEB SERVER ++++++++++++++++*/
 //*********************************************************/
 
@@ -341,18 +338,7 @@ static void http_server_netconn_serve(struct netconn *conn)
                //Write the String to Value   /channelId has always 1 char
                channelId[0] = buf[http_char_pointer];
                channelId[1] = '\0';
-            
-               //strcpy(&channelId,'"');
-               //memcpy(channelId[0],'"',1);
-               //channelId[0] = '"';
-                
-                //channelId[2] = '"';
 
-            
-            //strncpy(channelId[1],buf[http_char_pointer],1);
-               //memcpy(channelId[2],'"',1);
-            
-               //strcat(&channelId,'"');
             
                http_char_pointer++;
             }
@@ -470,7 +456,7 @@ static void http_server_netconn_serve(struct netconn *conn)
             buf[2]=='T' &&
             buf[3]==' ' &&
             buf[4]=='/' &&
-            buf[4]!='c' ) {
+            buf[5]!='c' ) {
             printf("buf[5] = %c\n", buf[5]);
             /* Send the HTML header
              * subtract 1 from the size, since we dont send the \0 in the string

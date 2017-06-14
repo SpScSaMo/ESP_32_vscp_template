@@ -14,8 +14,8 @@
 #define CHANNELTYPE3	CHANNELTYPE_SWITCH  //"Lightswitch"
 #define CHANNEL4		"4"
 #define CHANNELTYPE4	CHANNELTYPE_ROLLERSHUTTER  //"Motorswitch"
-#define WIFIROUTER		"Gerhard Phone"           //ENTER ROUTER NAME Gerhard Phone
-#define WIFIPASS		"test1234"           //ENTER ROUTER PASSWORD test1234
+#define WIFIROUTER		"XXX"           //ENTER ROUTER NAME Gerhard Phone
+#define WIFIPASS		"XXX"           //ENTER ROUTER PASSWORD test1234
 
 #define COMMANDMEASSURETYPE_UNDEFINED  	"0"
 #define COMMANDMEASSURETYPE_COUNT		"1"
