@@ -130,6 +130,26 @@ const static char http_index_hml[] = "<!DOCTYPE html>"
 "</body>\n"
 "</html>\n";
 
+
+// STATIC HTTP PAGE
+const static char http_index_hml_command[] = "<!DOCTYPE html>"
+"<html>\n"
+"<head>\n"
+"  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
+"  <style type=\"text/css\">\n"
+"    html, body, iframe { margin: 0; padding: 0; height: 100%; }\n"
+"    iframe { display: block; width: 100%; border: none; }\n"
+"  </style>\n"
+"<title>Better Than VSCP</title>\n"
+"</head>\n"
+"<body>\n"
+"<h1>COMMAND ACCEPTED-READ FOR NEXT COMMAND!</h1>\n"
+"</body>\n"
+"</html>\n";
+
+
+
+
 //************ WEB CONTEND FOR WEB SERVER ++++++++++++++++*/
 //*********************************************************/
 
@@ -249,9 +269,9 @@ static void http_server_netconn_serve(struct netconn *conn)
     char *buf;
     uint16_t buflen=1000;
     err_t err;
-    char channelId[3];  // this are just assigned testvalues and should go away
-    char commandType[3]; // this are just assigned testvalues and should go away
-    char value[3]; // this are just assigned testvalues and should go away
+    volatile char channelId[]="0";  // this are just assigned testvalues and should go away
+    volatile char commandType[]="0"; // this are just assigned testvalues and should go away
+    volatile char value[]="0"; // this are just assigned testvalues and should go away
     uint32_t status;
     
     //values for parsing
@@ -291,12 +311,15 @@ static void http_server_netconn_serve(struct netconn *conn)
         buf[11]=='d' &&
         buf[12]=='?' ) {
         
-        
-        	for(int i = 0; i < buflen; i++) {
-        	  putchar(buf[i]);}
-        
+            //Print out the buffer
+        	ESP_LOGI(TAG,"--------PRINT THE REQUEST BUFFER\n");
+            for(int i = 0; i < buflen; i++) {
+        	 putchar(buf[i]);}
+             printf("\n");
+               
         //iterate over the buffer
-        //for(http_char_pointer=13; http_char_pointer < (buflen-50); http_char_pointer++) {
+        
+        for(http_char_pointer=13; http_char_pointer < buflen; http_char_pointer++) {
 
             //EINLESEN channelId=
             if( buf[http_char_pointer]=='c' &&
@@ -310,12 +333,27 @@ static void http_server_netconn_serve(struct netconn *conn)
                 buf[http_char_pointer+8]=='d' &&
                 buf[http_char_pointer+9]=='=' ) {
                
+                ESP_LOGI(TAG,"--------FIND CHANNEL ID\n");
+               
                http_char_pointer =  http_char_pointer + 10; // Add the length of the "channelId=" + 1 to the http_char_pointer
+               printf("CHANNEL ID = %c\n", buf[http_char_pointer]);
                 
                //Write the String to Value   /channelId has always 1 char
-               strcpy(&channelId,'"');
-               memcpy(channelId[1],buf[http_char_pointer],1);
-               strcat(&channelId,'"');
+               channelId[0] = buf[http_char_pointer];
+               channelId[1] = '\0';
+            
+               //strcpy(&channelId,'"');
+               //memcpy(channelId[0],'"',1);
+               //channelId[0] = '"';
+                
+                //channelId[2] = '"';
+
+            
+            //strncpy(channelId[1],buf[http_char_pointer],1);
+               //memcpy(channelId[2],'"',1);
+            
+               //strcat(&channelId,'"');
+            
                http_char_pointer++;
             }
             
@@ -334,12 +372,18 @@ static void http_server_netconn_serve(struct netconn *conn)
                 buf[http_char_pointer+11]=='e'&&
                 buf[http_char_pointer+12]=='=') {
                
-               http_char_pointer =  http_char_pointer + 13; // Add the length of the "commandType=" + 1 to the http_char_pointer
+            
+               ESP_LOGI(TAG,"--------FIND COMMAND TYPE\n");
+               
                 
+               http_char_pointer =  http_char_pointer + 13; // Add the length of the "commandType=" + 1 to the http_char_pointer
+               printf("COMMAND TYPE = %c\n", buf[http_char_pointer]);
+               
+             
                //Write the String to Value   /channelId has alwas 1 char
-               strcpy(commandType[0], '"');
-               strcpy(commandType[1], buf[http_char_pointer]);
-               strcpy(commandType[2], '"');
+               commandType[0] = buf[http_char_pointer];
+               commandType[1] = '\0';
+
                http_char_pointer++;
             }
 
@@ -352,48 +396,71 @@ static void http_server_netconn_serve(struct netconn *conn)
                 buf[http_char_pointer+5]=='e' &&
                 buf[http_char_pointer+6]=='=') {
                
+            
+                ESP_LOGI(TAG,"--------FIND VALUE\n");
+                  
+            
                http_char_pointer =  http_char_pointer + 7; // Add the length of the "value=" + 1 to the http_char_pointer
-                
+               printf("VALUE = %c\n", buf[http_char_pointer]); 
+            
                //Write the String to Value   /channelId has alwas 1 char
-               strcpy(value[0], '"');
-               strcpy(value[1], buf[http_char_pointer]);
-               strcpy(value[2], '"');
-
-               netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
-               netconn_write(conn, http_index_hml, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
-
-               //     break;
-//
-//               while (1) {
-//                    http_char_pointer++;
-//
-//                    if (buf[http_char_pointer]!='&') {
-//                        strcat(value, buf[http_char_pointer]);
-//                    }
-//                    else {
-//                        //After finaly reading the value, the Parsing should be over
-//                        http_char_pointer = buflen;
-//                        break; // Pointer auf ein & Zeigt, dann wurde die Variable Fertig eingelesen -> Schleife verlassen
-//                    }
-//               }
+               value[0] = buf[http_char_pointer];
+               value[1] = '\0';
+            
                 
-            
-            
-           // }
+               //Write out the http header -> thats the response of the incoming http request
+               netconn_write(conn, http_html_hdr, sizeof(http_html_hdr)-1, NETCONN_NOCOPY);
+               netconn_write(conn, http_index_hml_command, sizeof(http_index_hml)-1, NETCONN_NOCOPY);
+    
+            }
 
         } //iterate for loop
+        ESP_LOGI(TAG,"--------END OF PARSING HTTP REQUEST\n");
         
-        
-        
-        
-        //Write out the http header -> thats the response of the incoming http request
-        
+ 
+
+        /* logic for sending to control queue */
+
+        //printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
+        printf("Ergebnis von Parsing:\nchannelId=%s\ncommandType=%s\nvalue=%s\n",channelId,commandType,value);
+        if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
+        	if (strcmp(value,OnOffType_Off)==0){
+        		status=LIGHT_OFF;
+        		xQueueSendToBack(relay_queue, &status, 0);
+        	}
+        	if (strcmp(value,OnOffType_On)==0){
+        		status=LIGHT_ON;
+        		xQueueSendToBack(relay_queue, &status, 0);
+        	}
+        }
+
+        if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
+        	if (strcmp(value,OnOffType_Off)==0){
+            	status=JALOUSIE_OFF;
+            	xQueueSendToBack(jalousie_queue, &status, 0);
+            }
+        }
+
+        if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_UpDownType)==0)){
+        	if (strcmp(value,UpDownType_Up)==0){
+          		status=JALOUSIE_UP;
+          		xQueueSendToBack(jalousie_queue, &status, 0);
+          	}
+          	if (strcmp(value,UpDownType_Down)==0){
+          		status=JALOUSIE_DOWN;
+          		xQueueSendToBack(jalousie_queue, &status, 0);
+          	}
+        }
+        /* end of logic for sending control messages to internal queue */
+       
 
         
-        } // END OF HTTP PARSING
+        
+    } // END OF HTTP PARSING
         
         
-        
+        /*THIS IS ONLY FOR NORMAL WEB REQUEST*/
+        //
         /* Is this an HTTP GET command? (only check the first 5 chars, since
          there are other formats for GET, and we're keeping it very simple )*/
         printf("buffer = %s \n", buf);
@@ -423,43 +490,6 @@ static void http_server_netconn_serve(struct netconn *conn)
     /* Delete the buffer (netconn_recv gives us ownership,
      so we have to make sure to deallocate the buffer) */
     netbuf_delete(inbuf);
-
-    /* pasring should be done here --> ToDo Gerhard */
-
-
-    /* logic for sending to control queue */
-
-    //printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
-    printf("Ergebnis von Parsing:\nchannelId=%s\ncommandType=%s\nvalue=%s\n",channelId,commandType,value);
-    if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
-    	if (strcmp(value,OnOffType_Off)==0){
-    		status=LIGHT_OFF;
-    		xQueueSendToBack(relay_queue, &status, 0);
-    	}
-    	if (strcmp(value,OnOffType_On)==0){
-    		status=LIGHT_ON;
-    		xQueueSendToBack(relay_queue, &status, 0);
-    	}
-    }
-
-    if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
-    	if (strcmp(value,OnOffType_Off)==0){
-        	status=JALOUSIE_OFF;
-        	xQueueSendToBack(jalousie_queue, &status, 0);
-        }
-    }
-
-    if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_UpDownType)==0)){
-    	if (strcmp(value,UpDownType_Up)==0){
-      		status=JALOUSIE_UP;
-      		xQueueSendToBack(jalousie_queue, &status, 0);
-      	}
-      	if (strcmp(value,UpDownType_Down)==0){
-      		status=JALOUSIE_DOWN;
-      		xQueueSendToBack(jalousie_queue, &status, 0);
-      	}
-    }
-    /* end of logic for sending control messages to internal queue */
 
 }
 
