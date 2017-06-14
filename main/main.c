@@ -39,6 +39,7 @@
 #include "esp_intr_alloc.h"     //is used for interrupts
 #include "config.h"				/* this has the defines for all the sensors
 								 and actors of the esp32_Thing */
+#include <stdio.h>
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -48,16 +49,16 @@
 //******************************************************************
 
 
-//Everything for Timer Implementation
-#define TIMER_INTR_SEL TIMER_INTR_LEVEL  /*!< Timer level interrupt */
-#define TIMER_GROUP    TIMER_GROUP_0     /*!< Test on timer group 0 */
-#define TIMER_DIVIDER   16               /*!< Hardware timer clock divider */
-#define TIMER_SCALE    (TIMER_BASE_CLK / TIMER_DIVIDER)  /*!< used to calculate counter value */
-#define TIMER_FINE_ADJ   (1.4*(TIMER_BASE_CLK / TIMER_DIVIDER)/1000000) /*!< used to compensate alarm value */
-#define TIMER_INTERVAL0_SEC   (3.4179)   /*!< test interval for timer 0 */
-#define TIMER_INTERVAL1_SEC   (5.78)   /*!< test interval for timer 1 */
-#define TEST_WITHOUT_RELOAD   0   /*!< example of auto-reload mode */
-#define TEST_WITH_RELOAD   1      /*!< example without auto-reload mode */
+////Everything for Timer Implementation
+//#define TIMER_INTR_SEL TIMER_INTR_LEVEL  /*!< Timer level interrupt */
+//#define TIMER_GROUP    TIMER_GROUP_0     /*!< Test on timer group 0 */
+//#define TIMER_DIVIDER   16               /*!< Hardware timer clock divider */
+//#define TIMER_SCALE    (TIMER_BASE_CLK / TIMER_DIVIDER)  /*!< used to calculate counter value */
+//#define TIMER_FINE_ADJ   (1.4*(TIMER_BASE_CLK / TIMER_DIVIDER)/1000000) /*!< used to compensate alarm value */
+//#define TIMER_INTERVAL0_SEC   (3.4179)   /*!< test interval for timer 0 */
+//#define TIMER_INTERVAL1_SEC   (5.78)   /*!< test interval for timer 1 */
+//#define TEST_WITHOUT_RELOAD   0   /*!< example of auto-reload mode */
+//#define TEST_WITH_RELOAD   1      /*!< example without auto-reload mode */
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -151,15 +152,6 @@ const static char http_index_hml_command[] = "<!DOCTYPE html>"
 //*********************************************************/
 
 
-
-
-//******************************************************************
-// Prototypes - ESP32 - THING - Overview ;-)
-//******************************************************************
-
-
-//void IRAM_ATTR btn0_isr_handler(void* arg); -- obsolete without VSCP
-
 /* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
 struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
 
@@ -171,12 +163,13 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
     switch(event->event_id) {
     case SYSTEM_EVENT_STA_START:
         printf("SYSTEM_EVENT_STA_START\n");
-		esp_wifi_connect();
+        esp_wifi_connect();
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
     	printf("SYSTEM_EVENT_STA_GOT_IP\n");
     	xEventGroupSetBits(wifi_event_group, STA_CONNECTED_BIT);
-        break;
+    	sprintf(espIP,IPSTR,IP2STR(&event->event_info.got_ip.ip_info.ip));
+    	break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
     	printf("SYSTEM_EVENT_STA_DISCONNECTED\n");
     	esp_wifi_connect();
@@ -535,6 +528,7 @@ static void http_server(void *pvParameters)
     } while(err == ERR_OK);
     netconn_close(conn);
     netconn_delete(conn);
+
 }
 
 
@@ -560,6 +554,10 @@ static void http_send_heartbeat(void *pvParameters)
 	  	   	        strcat(request, "0");
 	  	   	        strcat(request, "&channelType=");
 	  	   	        strcat(request, CHANNELTYPE1);
+	  		        strcat(request, "&ip=");
+	  		  	   	strcat(request, espIP);
+	  		  	    strcat(request, "&port=");
+	  		  	  	strcat(request, WEBSERVER_PORT_STR);
 	  	   	        strcat(request, " HTTP/1.0\r\n");
 	 	   	        strcat(request, "Host: ");
 	 	   	        strcat(request, DEAMON_SERVER);
@@ -578,7 +576,11 @@ static void http_send_heartbeat(void *pvParameters)
 	  	   	        strcat(request, "0");
 	  	   	        strcat(request, "&channelType=");
 	  	   	        strcat(request, CHANNELTYPE2);
-	  	   	        strcat(request, " HTTP/1.0\r\n");
+	  		        strcat(request, "&ip=");
+	  		  	   	strcat(request, espIP);
+	  		  	    strcat(request, "&port=");
+	  		  	  	strcat(request, WEBSERVER_PORT_STR);
+	  		  	  	strcat(request, " HTTP/1.0\r\n");
 	 	   	        strcat(request, "Host: ");
 	 	   	        strcat(request, DEAMON_SERVER);
 	  	   	        strcat(request, "\r\n");
@@ -596,6 +598,10 @@ static void http_send_heartbeat(void *pvParameters)
 	   	        strcat(request, "0");
 	   	        strcat(request, "&channelType=");
 	   	        strcat(request, CHANNELTYPE3);
+  		        strcat(request, "&ip=");
+  		  	   	strcat(request, espIP);
+  		  	    strcat(request, "&port=");
+  		  	  	strcat(request, WEBSERVER_PORT_STR);
 	   	        strcat(request, " HTTP/1.0\r\n");
 	   	        strcat(request, "Host: ");
 	   	        strcat(request, DEAMON_SERVER);
@@ -614,6 +620,10 @@ static void http_send_heartbeat(void *pvParameters)
   	   	        strcat(request, "0");
   	   	        strcat(request, "&channelType=");
   	   	        strcat(request, CHANNELTYPE4);
+  		        strcat(request, "&ip=");
+  		  	   	strcat(request, espIP);
+  		  	    strcat(request, "&port=");
+  		  	  	strcat(request, WEBSERVER_PORT_STR);
   	   	        strcat(request, " HTTP/1.0\r\n");
  	   	        strcat(request, "Host: ");
  	   	        strcat(request, DEAMON_SERVER);
@@ -654,6 +664,10 @@ static void http_send_queue_translator(void *pvParameters)
    	        char tmp[sizeof(uint32_t)];
    	        sprintf(tmp,"%d", mpara.value);
    	        strcat(request, tmp);
+		        strcat(request, "&ip=");
+		  	   	strcat(request, espIP);
+		  	    strcat(request, "&port=");
+		  	  	strcat(request, WEBSERVER_PORT_STR);
    	        strcat(request, " HTTP/1.0\r\n");
    	        strcat(request, "Host: ");
    	        strcat(request, DEAMON_SERVER);
@@ -677,6 +691,10 @@ void app_main(void)
 	//uint32_t UpOrDownMain;
 	nvs_flash_init(); //Initialize NVS flash storage with layout given in the partition table
 
+	//Start WIFI connection
+	initialise_wifi();
+
+	delay_ms(5000);
 
 	//create a sensor queue for sending values
 	sensor_queue = xQueueCreate(10, sizeof(messageparameters));
@@ -688,13 +706,11 @@ void app_main(void)
 	app_lichtschranke(); // starting the light barrier logic
 
 
-	//Start WIFI connection
-	initialise_wifi();
 	app_httpgetsend(); // starts the http-get sending task
 	xTaskCreate(&http_send_heartbeat, "http_send_heartbeat", 4096, NULL, 5, NULL);
 	xTaskCreate(&http_send_queue_translator, "http_send_queue_translator", 4096, NULL, 5, NULL);
     xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
-	xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
+	//xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
 
     //--VSCP------------------------//
     //init_vscp_millisecond_timer();

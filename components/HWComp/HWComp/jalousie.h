@@ -13,9 +13,9 @@
 #include "millisekundentimer.h"
 
 /* +++++++++++++++++++++++++++ defines +++++++++++++++++++++++++++++ */
-#define GPIO_OUTPUT_UP 12
-#define GPIO_OUTPUT_DOWN 13
-#define GPIO_OUTPUT_POWER 14
+#define GPIO_OUTPUT_UP 16
+#define GPIO_OUTPUT_DOWN 17
+#define GPIO_OUTPUT_POWER 18
 #define GPIO_OUTPUT_PIN_SEL_JAL ((1<<GPIO_OUTPUT_UP)|(1<<GPIO_OUTPUT_DOWN)|(1<<GPIO_OUTPUT_POWER))
 
 #define GPIO_OFF	1
@@ -26,7 +26,7 @@
 #define JALOUSIE_UP		2
 #define JALOUSIE_DOWN	3
 
-#define TIMEOUT	5000 // turn automatically of after this amount of milliseconds
+#define TIMEOUT	15000 // turn automatically of after this amount of milliseconds
 
 /* +++++++++++++++++++++++++++ global queue +++++++++++++++++++++++++++++ */
 xQueueHandle jalousie_queue;

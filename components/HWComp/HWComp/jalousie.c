@@ -27,8 +27,8 @@
 void jalousie_task(void* arg)
 {
 	uint32_t UpOrDown=99; // this is the default value
-	uint32_t some_irrelevant_value=0;
-	uint32_t timecount;
+	//uint32_t some_irrelevant_value=0;
+	//uint32_t timecount;
 
 	//initially turn off
 	gpio_set_level(GPIO_OUTPUT_POWER, GPIO_OFF);
@@ -54,14 +54,24 @@ void jalousie_task(void* arg)
 
 		}
 
-	xQueueReceive(ms_50_queue2, &some_irrelevant_value, portMAX_DELAY);
-	timecount+=50; // 50 ms werden zu timecount addiert
-	if (UpOrDown==JALOUSIE_OFF) timecount=TIMEOUT; // damit wird ausgeschaltet
-	if (timecount>=TIMEOUT) {  // nach definierter Zeit in ms wird abgeschaltet
-		gpio_set_level(GPIO_OUTPUT_POWER, GPIO_OFF);
-		UpOrDown=99;
-		timecount=0;
-	}
+		if (UpOrDown==JALOUSIE_OFF) {
+					gpio_set_level(GPIO_OUTPUT_POWER, GPIO_OFF);
+					gpio_set_level(GPIO_OUTPUT_UP, GPIO_OFF);
+					gpio_set_level(GPIO_OUTPUT_DOWN, GPIO_OFF);
+
+		}
+
+	//xQueueReceive(ms_50_queue2, &some_irrelevant_value, portMAX_DELAY);
+	UpOrDown=99;
+//	timecount+=50; // 50 ms werden zu timecount addiert
+//	 timecount=TIMEOUT; // damit wird ausgeschaltet
+//	if (timecount>=TIMEOUT) {  // nach definierter Zeit in ms wird abgeschaltet
+//		gpio_set_level(GPIO_OUTPUT_POWER, GPIO_OFF);
+//		gpio_set_level(GPIO_OUTPUT_UP, GPIO_OFF);
+//		gpio_set_level(GPIO_OUTPUT_DOWN, GPIO_OFF);
+//		UpOrDown=99;
+//		timecount=0;
+//	}
     }
 }
 

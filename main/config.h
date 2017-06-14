@@ -14,8 +14,8 @@
 #define CHANNELTYPE3	CHANNELTYPE_SWITCH  //"Lightswitch"
 #define CHANNEL4		"4"
 #define CHANNELTYPE4	CHANNELTYPE_ROLLERSHUTTER  //"Motorswitch"
-#define WIFIROUTER		"XXX"           //ENTER ROUTER NAME Gerhard Phone
-#define WIFIPASS		"XXX"           //ENTER ROUTER PASSWORD test1234
+#define WIFIROUTER		""           //ENTER ROUTER NAME Gerhard Phone
+#define WIFIPASS		""           //ENTER ROUTER PASSWORD test1234
 
 #define COMMANDMEASSURETYPE_UNDEFINED  	"0"
 #define COMMANDMEASSURETYPE_COUNT		"1"
@@ -59,6 +59,7 @@
 #define DEAMON_PORT "80"
 
 #define WEBSERVER_PORT 88
+#define WEBSERVER_PORT_STR "88" // muss ident zu oben sein!
 
 /* ++++++++++++++++++++++++++++++++ other defines +++++++++++++++++++++++++++++++++++++++++*/
 
@@ -77,6 +78,7 @@ typedef struct messageparameters {
 }messageparameters;
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
+
 EventGroupHandle_t wifi_event_group;
 
 static const char *TAG = "example"; // for logging of http requests
@@ -87,6 +89,7 @@ static const char *TAG = "example"; // for logging of http requests
    to the AP with an IP? */
 int STA_CONNECTED_BIT;
 
+volatile char espIP[20];
 
 
 #endif
