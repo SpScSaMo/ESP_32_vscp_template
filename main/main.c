@@ -652,7 +652,6 @@ static void http_send_queue_translator(void *pvParameters)
 
    while(1) {
 
-
 	xQueueReceive(sensor_queue, &mpara, portMAX_DELAY);
    	strcpy(request, "GET /api/Thing/set?thingId=");
    	        strcat(request, THING_ID);
@@ -677,7 +676,6 @@ static void http_send_queue_translator(void *pvParameters)
 
    	     ESP_LOGI(TAG,"Sending value to send_queue: %s",request);
    	     xQueueSendToBack(send_queue, &request, 0);
-
    }
 }
 
