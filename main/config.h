@@ -14,8 +14,8 @@
 #define CHANNELTYPE3	CHANNELTYPE_SWITCH  //"Lightswitch"
 #define CHANNEL4		"4"
 #define CHANNELTYPE4	CHANNELTYPE_ROLLERSHUTTER  //"Motorswitch"
-#define WIFIROUTER		""           //ENTER ROUTER NAME Gerhard Phone
-#define WIFIPASS		""           //ENTER ROUTER PASSWORD test1234
+#define WIFIROUTER		"Gerhard Phone"           //ENTER ROUTER NAME Gerhard Phone
+#define WIFIPASS		"test1234"           //ENTER ROUTER PASSWORD test1234
 
 #define COMMANDMEASSURETYPE_UNDEFINED  	"0"
 #define COMMANDMEASSURETYPE_COUNT		"1"
@@ -40,6 +40,8 @@
 #define OnOffType_Off 	"0"
 #define OnOffType_On  	"1"
 
+#define StopMoveType_Off 	"1"
+
 #define UpDownType_Up 	"0"
 #define UpDownType_Down "1"
 
@@ -55,11 +57,11 @@
 
 
 /* Constants that aren't configurable in menuconfig */
-#define DEAMON_SERVER "btdeamon20170517084951.azurewebsites.net"
-#define DEAMON_PORT "80"
+#define DEAMON_SERVER "172.20.10.12" //172.20.10.12
+#define DEAMON_PORT "5100" //5100
 
-#define WEBSERVER_PORT 88
-#define WEBSERVER_PORT_STR "88" // muss ident zu oben sein!
+#define WEBSERVER_PORT 5101
+#define WEBSERVER_PORT_STR "5101" // muss ident zu Zeile oberhalb sein!
 
 /* ++++++++++++++++++++++++++++++++ other defines +++++++++++++++++++++++++++++++++++++++++*/
 

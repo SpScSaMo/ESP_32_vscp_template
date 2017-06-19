@@ -413,8 +413,8 @@ static void http_server_netconn_serve(struct netconn *conn)
         	}
         }
 
-        if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
-        	if (strcmp(value,OnOffType_Off)==0){
+        if ((strcmp(channelId,CHANNEL4)==0) && (strcmp(commandType,COMMANDTYPE_StopMoveType)==0)){
+        	if (strcmp(value,StopMoveType_Off)==0){
             	status=JALOUSIE_OFF;
             	xQueueSendToBack(jalousie_queue, &status, 0);
             }
