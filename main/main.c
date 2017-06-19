@@ -45,24 +45,6 @@
 
 
 //******************************************************************
-// DEFINES - ESP32 - THING
-//******************************************************************
-
-
-////Everything for Timer Implementation
-//#define TIMER_INTR_SEL TIMER_INTR_LEVEL  /*!< Timer level interrupt */
-//#define TIMER_GROUP    TIMER_GROUP_0     /*!< Test on timer group 0 */
-//#define TIMER_DIVIDER   16               /*!< Hardware timer clock divider */
-//#define TIMER_SCALE    (TIMER_BASE_CLK / TIMER_DIVIDER)  /*!< used to calculate counter value */
-//#define TIMER_FINE_ADJ   (1.4*(TIMER_BASE_CLK / TIMER_DIVIDER)/1000000) /*!< used to compensate alarm value */
-//#define TIMER_INTERVAL0_SEC   (3.4179)   /*!< test interval for timer 0 */
-//#define TIMER_INTERVAL1_SEC   (5.78)   /*!< test interval for timer 1 */
-//#define TEST_WITHOUT_RELOAD   0   /*!< example of auto-reload mode */
-//#define TEST_WITH_RELOAD   1      /*!< example without auto-reload mode */
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-//******************************************************************
 // SPECIAL INCLUDES - ESP32 - VSCP Very Simple Control Protokoll
 //******************************************************************
 #include <string.h>
@@ -94,16 +76,7 @@
 // INCLUDES - FOR webserver
 //******************************************************************
 
-//#include "webserver.h"
-//#include "cJSON.h"
 #include "lwip/api.h"
-
-
-//******************************************************************
-// GLOBAL VARIABLES - FOR webserver
-//******************************************************************
-
-char* json_unformatted;
 
 /**************************************************/
 

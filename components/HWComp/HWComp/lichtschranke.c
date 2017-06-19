@@ -38,7 +38,7 @@ void ligthbarrier_task(void* arg)
 	uint32_t timecounter=0;
 	uint32_t personen=0;
 	uint32_t firstSet=0;
-	uint32_t relaystatus=0;
+	//uint32_t relaystatus=0;
     messageparameters mparalb;
 
 	while (1){
