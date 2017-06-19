@@ -2,18 +2,19 @@
 //Projekt: VSCP Very Simple Control Protokoll implementation ESP32 #
 //##################################################################
 //
-// This Project implements the VSCP over Ethernet on the ESP32 Thing
+// This Project was changed and now implements the
+// BtVSCP (Better than VSCP) over Wifi on the ESP32 Thing
 //
 //
 //Authors:  Gerhard Sabeditsch, Juergen Schoener, Juergen Spandl,
-//          Christian Moedelhammer
+//          Christian Moedlhammer
 //
 //Version: 1.0
 //
 //##################################################################
 
 //******************************************************************
-// STANDARD INCLUDES - ESP32 - THING
+// GENERAL INCLUDES
 //******************************************************************
 #include "freertos/FreeRTOS.h"
 #include "esp_wifi.h"
@@ -29,34 +30,19 @@
 #include "soc/timer_group_struct.h"
 #include "driver/periph_ctrl.h"
 #include "driver/timer.h"
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-//******************************************************************
-// SPECIAL INCLUDES - ESP32 - THING
-//******************************************************************
-
 #include "esp_err.h"            //for error handling
 #include "esp_intr_alloc.h"     //is used for interrupts
 #include "config.h"				/* this has the defines for all the sensors
 								 and actors of the esp32_Thing */
 #include <stdio.h>
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-//******************************************************************
-// SPECIAL INCLUDES - ESP32 - VSCP Very Simple Control Protokoll
-//******************************************************************
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "vscp_class.h"
-#include "vscp_type.h"
-#include "vscp_firmware.h"
-#include "vscp_millisecond_timer.h"
+
 
 //******************************************************************
-// SPECIAL INCLUDES - ESP32 - HW Lichtschranke + Lichtrelais + Lichtsensor + Jalousie
+// SPECIAL INCLUDES - ESP32 - HW (Hardware)
+// Lichtschranke + Lichtrelais + Lichtsensor + Jalousie
 //******************************************************************
 #include "lichtschranke.h"
 #include "lichtsensor.h"
@@ -68,25 +54,20 @@
 //******************************************************************
 // INCLUDES - FOR http sender
 //******************************************************************
-
 #include "httpgetsend.h"
 
 
 //******************************************************************
 // INCLUDES - FOR webserver
 //******************************************************************
-
 #include "lwip/api.h"
 
-/**************************************************/
 
-//*********************************************************
-//************ WEB CONTEND FOR WEB SERVER ++++++++++++++++*/
+//************ WEB CONTEND START FOR WEB SERVER RESPONSE ++++++++++++++++*/
 
 // STATIC HTTP HEADER
 const static char http_html_hdr[] =
 "HTTP/1.1 200 OK\r\nContent-type: text/html\r\n\r\n";
-
 
 // STATIC HTTP PAGE
 const static char http_index_hml[] = "<!DOCTYPE html>"
@@ -104,7 +85,6 @@ const static char http_index_hml[] = "<!DOCTYPE html>"
 "</body>\n"
 "</html>\n";
 
-
 // STATIC HTTP PAGE
 const static char http_index_hml_command[] = "<!DOCTYPE html>"
 "<html>\n"
@@ -121,16 +101,12 @@ const static char http_index_hml_command[] = "<!DOCTYPE html>"
 "</body>\n"
 "</html>\n";
 
-//************ WEB CONTEND FOR WEB SERVER ++++++++++++++++*/
+//************ WEB CONTEND END FOR WEB SERVER RESPONSE ++++++++++++++++*/
 //*********************************************************/
 
 
-/* +++++++++++++++++++++++++++ śtruct for timevalue (for test porposes) +++++++++++++++++++++++++++++ */
-struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };   /* btw settimeofday() is helpfull here too*/
-
-
 /**
- * WIFI Event Handler, falls die Verbindung abreist oder so ;-)
+ * WIFI Event Handler, falls die Verbindung abbricht werden diese Routinen aufgerufen und ausgeführt
  */
 static esp_err_t event_handler(void *ctx, system_event_t *event){
     switch(event->event_id) {
@@ -154,49 +130,8 @@ static esp_err_t event_handler(void *ctx, system_event_t *event){
     return ESP_OK;
 }
 
-// The following is Obsolete without VSCP!
-
-///* Button 0 ISR
-// *
-// * This is the ISR for Button 0 on falling edge
-// *
-// * \author: Christian Mödlhammer
-// */
-//void IRAM_ATTR btn0_isr_handler(void* arg)
-//{
-//	uint32_t sec, us;
-//	uint64_t ts,ts_init,ts_next;
-//
-//	// Null für den Ausgangswert
-//	vscp_initbtncnt=0;
-//
-//	if (gpio_get_level(GPIO_NUM_0)==0){
-//
-//		gettimeofday(&tv, NULL);
-//			(sec) = tv.tv_sec;
-//			(us) = tv.tv_usec;
-//			(ts) = (uint64_t)(sec*1000000+us);
-//			ts_init=ts;
-//			ts_next=ts;
-//			while ((ts_next-ts_init)<250000){ // wait for 250 milliseconds
-//				gettimeofday(&tv, NULL);
-//				(sec) = tv.tv_sec;
-//				(us) = tv.tv_usec;
-//				(ts) = (uint64_t)(sec*1000000+us);
-//				ts_next=ts;
-//			}
-//
-//			//if button pressed for more than 250 milliseconds
-//			if (gpio_get_level(GPIO_NUM_0)==0) vscp_initbtncnt=251;
-//
-//	}
-//
-//}
-
-
 /**
  * initializes the WIFI and the connection to the in config.h specified Access Point
- *
  *
  */
 static void initialise_wifi(void){
@@ -222,8 +157,10 @@ static void initialise_wifi(void){
 }
 
 
-/*
- * EVERYTHING FOR THE WEB-SERVER
+/**
+ * EVERYTHING FOR THE WEB-SERVER listening on the specified port
+ * This subroutine is also parsing the command sent to ESP32
+ *
  */
 
 static void http_server_netconn_serve(struct netconn *conn)
@@ -368,12 +305,8 @@ static void http_server_netconn_serve(struct netconn *conn)
 
         } //iterate for loop
         ESP_LOGI(TAG,"--------END OF PARSING HTTP REQUEST\n");
-        
- 
 
         /* logic for sending to control queue */
-
-        //printf("Ergebnis von Parsing (%s : %s) compare: %d",channelId,CHANNEL3,strcmp(channelId,CHANNEL3));
         printf("Ergebnis von Parsing:\nchannelId=%s\ncommandType=%s\nvalue=%s\n",channelId,commandType,value);
         if ((strcmp(channelId,CHANNEL3)==0) && (strcmp(commandType,COMMANDTYPE_OnOffType)==0)){
         	if (strcmp(value,OnOffType_Off)==0){
@@ -404,10 +337,7 @@ static void http_server_netconn_serve(struct netconn *conn)
           	}
         }
         /* end of logic for sending control messages to internal queue */
-       
 
-        
-        
     } // END OF HTTP PARSING
         
         
@@ -445,8 +375,9 @@ static void http_server_netconn_serve(struct netconn *conn)
 
 }
 
-/*
+/**
  * This is just for testing the actors as long as the parsing is not working
+ * This is for testing the hardware without revceiving commands
  *
  */
 static void actor_test(void *pvParameters) {
@@ -475,12 +406,9 @@ static void actor_test(void *pvParameters) {
 
 }
 
-
-
-
 /**
- * open http listening Server at specified port
- *
+ * WebServer Subroutine
+ * --> opens http listening at specified port
  *
  */
 
@@ -507,8 +435,7 @@ static void http_server(void *pvParameters)
 
 
 /**
- * Task for register and heartbeat
- *
+ * Task for register and sending heartbeat every minute
  *
  */
 static void http_send_heartbeat(void *pvParameters)
@@ -615,7 +542,6 @@ static void http_send_heartbeat(void *pvParameters)
 /**
  * Task for translating queues and sending messages
  *
- *
  */
 static void http_send_queue_translator(void *pvParameters)
 {
@@ -652,23 +578,21 @@ static void http_send_queue_translator(void *pvParameters)
    }
 }
 
-/* app_main()
- *
- *  This Function is the Main Funktion of the Project
+/*
+ *  This Function is the Main Function of the Project
  *
  */
 void app_main(void)
 {
-	//uint32_t UpOrDownMain;
 	nvs_flash_init(); //Initialize NVS flash storage with layout given in the partition table
 
 	//Start WIFI connection
 	initialise_wifi();
-
 	delay_ms(5000);
 
 	//create a sensor queue for sending values
 	sensor_queue = xQueueCreate(10, sizeof(messageparameters));
+
 	// Start HW Components and millisecond timer
 	app_timer(); // starting the timer with the queues 1 ms and 50 ms
 	app_lichtsensor(); // starting light sensor
@@ -676,27 +600,26 @@ void app_main(void)
 	app_jalousie(); // starting the jalousie task
 	app_lichtschranke(); // starting the light barrier logic
 
-
+	// Start HTTP GET Sender
 	app_httpgetsend(); // starts the http-get sending task
+
+	// Start Heartbeat and Queue tasks for sending messages
 	xTaskCreate(&http_send_heartbeat, "http_send_heartbeat", 4096, NULL, 5, NULL);
 	xTaskCreate(&http_send_queue_translator, "http_send_queue_translator", 4096, NULL, 5, NULL);
-    xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
-	//xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
 
-    //--VSCP------------------------//
-    //init_vscp_millisecond_timer();
+	// Start the WebServer
+	xTaskCreate(&http_server, "http_server", 4096, NULL, 6, NULL);
 
-    
+	//The Task below can be activated to test the HW without receiving command messages via the server
+    //xTaskCreate(&actor_test, "actor_test", 4096, NULL, 10, NULL);
 
-    gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT);
+	// This is just a blinking LED Routine to see whether the ESP32 is still working ;-)
+	gpio_set_direction(GPIO_NUM_5, GPIO_MODE_OUTPUT);
     int level = 0;
     while (true) {
     		gpio_set_level(GPIO_NUM_5, level);
     	        level = !level;
-
-
     	        vTaskDelay(300 / portTICK_PERIOD_MS);
-
     }
 }
 

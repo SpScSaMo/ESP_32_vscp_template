@@ -91,7 +91,7 @@ static const char *TAG = "example"; // for logging of http requests
    to the AP with an IP? */
 int STA_CONNECTED_BIT;
 
-volatile char espIP[20];
+volatile char espIP[20]; // saves the IP Adress that is assigned to the ESP32
 
 
 #endif
