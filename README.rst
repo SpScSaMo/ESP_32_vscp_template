@@ -3,7 +3,7 @@ This program is implementing the following features:
 1) Lightbarrier 
 2) Lightsensor 
 3) Lightrelais
-3) Rollershutter 
+4) Rollershutter 
 
 You can find the main code in main/main.c and main/config.h for customizing
 You can find the code for implementing the HW devices in components/HRComp/HWComp
